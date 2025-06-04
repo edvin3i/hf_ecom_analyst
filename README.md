@@ -165,6 +165,13 @@ In Claude Desktop - just enter your prompts
 
 For Gradio interface - go to http://localhost:7860/
 
+Links to screenshots 
+[https://ibb.co/Psbgx6NG](url)
+[https://ibb.co/Fb60B7qD](url)
+[https://ibb.co/RkfvLFGj](url)
+[https://ibb.co/qMVQzcHt](url)
+
+![pic1](https://i.ibb.co/Q3Lbsg7D/Screenshot-2025-06-05-at-01-23-23.png)
 
 
 
