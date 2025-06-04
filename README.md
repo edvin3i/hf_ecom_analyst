@@ -18,7 +18,7 @@ DROP TABLE IF EXISTS transactions;\
 DROP TABLE IF EXISTS articles;\
 DROP TABLE IF EXISTS customers;\
 
-`-- Create the customers table`
+`-- Create the customers table`\
 CREATE TABLE customers (\
     customer_id TEXT PRIMARY KEY,\
     first_name TEXT,\
@@ -27,69 +27,69 @@ CREATE TABLE customers (\
     fashion_news_frequency TEXT,\
     age INTEGER,\
     postal_code TEXT\
-);\
-
--- Create the articles table
-CREATE TABLE articles (
-    article_id TEXT PRIMARY KEY,
-    product_code TEXT,
-    prod_name TEXT,
-    product_type_no INTEGER,
-    product_type_name TEXT,
-    product_group_name TEXT,
-    graphical_appearance_no INTEGER,
-    graphical_appearance_name TEXT,
-    colour_group_code TEXT,
-    colour_group_name TEXT,
-    perceived_colour_value_id INTEGER,
-    perceived_colour_value_name TEXT,
-    perceived_colour_master_id INTEGER,
-    perceived_colour_master_name TEXT,
-    department_no INTEGER,
-    department_name TEXT,
-    index_code TEXT,
-    index_name TEXT,
-    index_group_no INTEGER,
-    index_group_name TEXT,
-    section_no INTEGER,
-    section_name TEXT,
-    garment_group_no INTEGER,
-    garment_group_name TEXT,
-    detail_desc TEXT
 );
 
--- Create the transactions table
-CREATE TABLE transactions (
-    transaction_date DATE,
-    customer_id TEXT REFERENCES customers(customer_id),
-    article_id TEXT REFERENCES articles(article_id),
-    price NUMERIC(10, 6),
-    sales_channel_id INTEGER
+`-- Create the articles table`\
+CREATE TABLE articles (\
+    article_id TEXT PRIMARY KEY,\
+    product_code TEXT,\
+    prod_name TEXT,\
+    product_type_no INTEGER,\
+    product_type_name TEXT,\
+    product_group_name TEXT,\
+    graphical_appearance_no INTEGER,\
+    graphical_appearance_name TEXT,\
+    colour_group_code TEXT,\
+    colour_group_name TEXT,\
+    perceived_colour_value_id INTEGER,\
+    perceived_colour_value_name TEXT,\
+    perceived_colour_master_id INTEGER,\
+    perceived_colour_master_name TEXT,\
+    department_no INTEGER,\
+    department_name TEXT,\
+    index_code TEXT,\
+    index_name TEXT,\
+    index_group_no INTEGER,\
+    index_group_name TEXT,\
+    section_no INTEGER,\
+    section_name TEXT,\
+    garment_group_no INTEGER,\
+    garment_group_name TEXT, \
+    detail_desc TEXT \
 );
 
--- Optional: Indexes to improve performance
-CREATE INDEX idx_transactions_customer_id ON transactions(customer_id);
-CREATE INDEX idx_transactions_article_id ON transactions(article_id);
-CREATE INDEX idx_transactions_date ON transactions(transaction_date);
+`-- Create the transactions table`\
+CREATE TABLE transactions (\
+    transaction_date DATE,\
+    customer_id TEXT REFERENCES customers(customer_id),\
+    article_id TEXT REFERENCES articles(article_id),\
+    price NUMERIC(10, 6),\
+    sales_channel_id INTEGER\
+);
+
+`-- Optional: Indexes to improve performance`\
+CREATE INDEX idx_transactions_customer_id ON transactions(customer_id);\
+CREATE INDEX idx_transactions_article_id ON transactions(article_id);\
+CREATE INDEX idx_transactions_date ON transactions(transaction_date);\
 `
 
 ### 1.3 Save data to DB 
-`-- sample_data.sql`
-`-- Insert sample customers`
+`-- sample_data.sql`\
+`-- Insert sample customers`\
 
-INSERT INTO customers (customer_id, first_name, active, club_member_status, fashion_news_frequency, age, postal_code) VALUES
-('c001', 'Emma', true, 'ACTIVE', 'Regularly', 28, '10001'),
-('c002', 'James', true, 'LEFT CLUB', 'Monthly', 34, '10002'),
-('c003', 'Sofia', false, 'ACTIVE', 'None', 22, '10003'),
-('c004', 'Lucas', true, 'PRE_CREATE', 'Regularly', 45, '10004'),
-('c005', 'Aria', true, 'ACTIVE', 'Regularly', 31, '10005'),
-('c006', 'Oliver', true, 'ACTIVE', 'Monthly', 38, '10006'),
-('c007', 'Isabella', false, 'LEFT CLUB', 'None', 26, '10007'),
-('c008', 'Noah', true, 'ACTIVE', 'Regularly', 29, '10008'),
-('c009', 'Mia', true, 'PRE_CREATE', 'Monthly', 33, '10009'),
-('c010', 'Liam', true, 'ACTIVE', 'Regularly', 41, '10010');
+INSERT INTO customers (customer_id, first_name, active, club_member_status, fashion_news_frequency, age, postal_code) VALUES\
+('c001', 'Emma', true, 'ACTIVE', 'Regularly', 28, '10001'),\
+('c002', 'James', true, 'LEFT CLUB', 'Monthly', 34, '10002'),\
+('c003', 'Sofia', false, 'ACTIVE', 'None', 22, '10003'),\
+('c004', 'Lucas', true, 'PRE_CREATE', 'Regularly', 45, '10004'),\
+('c005', 'Aria', true, 'ACTIVE', 'Regularly', 31, '10005'),\
+('c006', 'Oliver', true, 'ACTIVE', 'Monthly', 38, '10006'),\
+('c007', 'Isabella', false, 'LEFT CLUB', 'None', 26, '10007'),\
+('c008', 'Noah', true, 'ACTIVE', 'Regularly', 29, '10008'),\
+('c009', 'Mia', true, 'PRE_CREATE', 'Monthly', 33, '10009'),\
+('c010', 'Liam', true, 'ACTIVE', 'Regularly', 41, '10010');\
 
-`-- Insert sample articles`
+`-- Insert sample articles`\
 
 INSERT INTO articles (article_id, product_code, prod_name, product_type_no, product_type_name, product_group_name, graphical_appearance_no, graphical_appearance_name, colour_group_code, colour_group_name, perceived_colour_value_id, perceived_colour_value_name, perceived_colour_master_id, perceived_colour_master_name, department_no, department_name, index_code, index_name, index_group_no, index_group_name, section_no, section_name, garment_group_no, garment_group_name, detail_desc) VALUES
 ('a001', 'PC001', 'Slim Fit Jeans', 1, 'Trousers', 'Garment Lower body', 1, 'Solid', 'Blue', 'Blue', 1, 'Dark', 1, 'Blue', 1, 'Menswear', 'A', 'Ladieswear', 1, 'Garments', 1, 'Womens Everyday Basics', 1, 'Jeans', 'Classic denim jeans'),
@@ -103,7 +103,7 @@ INSERT INTO articles (article_id, product_code, prod_name, product_type_no, prod
 ('a009', 'PC009', 'Formal Shirt', 9, 'Shirt', 'Garment Upper body', 9, 'Solid', 'White', 'White', 9, 'Light', 2, 'White', 9, 'Menswear', 'I', 'Shirts', 9, 'Garments', 9, 'Mens Formal', 9, 'Shirts', 'Business formal shirt'),
 ('a010', 'PC010', 'Knit Cardigan', 10, 'Cardigan', 'Garment Upper body', 10, 'Solid', 'Beige', 'Beige', 10, 'Light', 7, 'Beige', 10, 'Womenwear', 'J', 'Cardigans', 10, 'Garments', 10, 'Womens Knitwear', 10, 'Knitwear', 'Cozy knit cardigan');
 
-`-- Insert sample transactions`
+`-- Insert sample transactions`\
 INSERT INTO transactions (transaction_date, customer_id, article_id, price, sales_channel_id) VALUES
 ('2024-01-15', 'c001', 'a001', 79.99, 1),
 ('2024-01-15', 'c001', 'a002', 19.99, 1),
@@ -131,16 +131,16 @@ Download Claude Desktop - https://claude.ai/download
 
 Run it and edit settings (Settings -> Developer -> Edit config). Open file claude_desktop_config.json and insert these settings
 `{
-  "mcpServers": {
-    "ecommerce-server": {
-      "command": "python3",
-      "args": ["/Users/bakytn/Desktop/ecole42/hf_ecom_analyst/mcp-server/mcp_server_only.py"],
-      "env": {
-        "DB_HOST": "localhost",
-        "DB_PORT": "5432",
-        "DB_NAME": "postgres",
-        "DB_USER": "postgres",
-        "DB_PASSWORD": "mypassword"
+  "mcpServers": {\
+    "ecommerce-server": {\
+      "command": "python3",\
+      "args": ["/Users/bakytn/Desktop/ecole42/hf_ecom_analyst/mcp-server/mcp_server_only.py"],\
+      "env": {\
+        "DB_HOST": "localhost",\
+        "DB_PORT": "5432",\
+        "DB_NAME": "postgres",\
+        "DB_USER": "postgres",\
+        "DB_PASSWORD": "mypassword"\
       }
     }
   }
