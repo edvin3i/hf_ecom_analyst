@@ -1,6 +1,6 @@
-#How to run MCP server
+# How to run MCP server
 
-##Step 1 - Installation of database
+## Step 1 - Installation of database
 (if you have your database - update your code for connection, and skip this part)
 We need to create local database
 `docker run --name my-postgres -e POSTGRES_PASSWORD=mypassword -p 5432:5432 -d postgres`
@@ -13,21 +13,21 @@ This command will open terminal to your docker container
 When you're inside your database (see command in the top) - you can create tables and fill it with data - use this commands
 
 `-- migration.sql
--- Drop tables if they already exist to ensure clean migration
-DROP TABLE IF EXISTS transactions;
-DROP TABLE IF EXISTS articles;
-DROP TABLE IF EXISTS customers;
+-- Drop tables if they already exist to ensure clean migration`
+DROP TABLE IF EXISTS transactions;\
+DROP TABLE IF EXISTS articles;\
+DROP TABLE IF EXISTS customers;\
 
--- Create the customers table
-CREATE TABLE customers (
-    customer_id TEXT PRIMARY KEY,
-    first_name TEXT,
-    active BOOLEAN,
-    club_member_status TEXT,
-    fashion_news_frequency TEXT,
-    age INTEGER,
-    postal_code TEXT
-);
+`-- Create the customers table`
+CREATE TABLE customers (\
+    customer_id TEXT PRIMARY KEY,\
+    first_name TEXT,\
+    active BOOLEAN,\
+    club_member_status TEXT,\
+    fashion_news_frequency TEXT,\
+    age INTEGER,\
+    postal_code TEXT\
+);\
 
 -- Create the articles table
 CREATE TABLE articles (
@@ -74,9 +74,9 @@ CREATE INDEX idx_transactions_date ON transactions(transaction_date);
 `
 
 ### 1.3 Save data to DB 
-`-- sample_data.sql
+`-- sample_data.sql`
+`-- Insert sample customers`
 
--- Insert sample customers
 INSERT INTO customers (customer_id, first_name, active, club_member_status, fashion_news_frequency, age, postal_code) VALUES
 ('c001', 'Emma', true, 'ACTIVE', 'Regularly', 28, '10001'),
 ('c002', 'James', true, 'LEFT CLUB', 'Monthly', 34, '10002'),
@@ -89,7 +89,8 @@ INSERT INTO customers (customer_id, first_name, active, club_member_status, fash
 ('c009', 'Mia', true, 'PRE_CREATE', 'Monthly', 33, '10009'),
 ('c010', 'Liam', true, 'ACTIVE', 'Regularly', 41, '10010');
 
--- Insert sample articles
+`-- Insert sample articles`
+
 INSERT INTO articles (article_id, product_code, prod_name, product_type_no, product_type_name, product_group_name, graphical_appearance_no, graphical_appearance_name, colour_group_code, colour_group_name, perceived_colour_value_id, perceived_colour_value_name, perceived_colour_master_id, perceived_colour_master_name, department_no, department_name, index_code, index_name, index_group_no, index_group_name, section_no, section_name, garment_group_no, garment_group_name, detail_desc) VALUES
 ('a001', 'PC001', 'Slim Fit Jeans', 1, 'Trousers', 'Garment Lower body', 1, 'Solid', 'Blue', 'Blue', 1, 'Dark', 1, 'Blue', 1, 'Menswear', 'A', 'Ladieswear', 1, 'Garments', 1, 'Womens Everyday Basics', 1, 'Jeans', 'Classic denim jeans'),
 ('a002', 'PC002', 'Cotton T-Shirt', 2, 'T-shirt', 'Garment Upper body', 2, 'Solid', 'White', 'White', 2, 'Light', 2, 'White', 2, 'Womenwear', 'B', 'Basics', 2, 'Garments', 2, 'Womens Everyday Collection', 2, 'Jersey Basic', 'Basic cotton t-shirt'),
@@ -102,7 +103,7 @@ INSERT INTO articles (article_id, product_code, prod_name, product_type_no, prod
 ('a009', 'PC009', 'Formal Shirt', 9, 'Shirt', 'Garment Upper body', 9, 'Solid', 'White', 'White', 9, 'Light', 2, 'White', 9, 'Menswear', 'I', 'Shirts', 9, 'Garments', 9, 'Mens Formal', 9, 'Shirts', 'Business formal shirt'),
 ('a010', 'PC010', 'Knit Cardigan', 10, 'Cardigan', 'Garment Upper body', 10, 'Solid', 'Beige', 'Beige', 10, 'Light', 7, 'Beige', 10, 'Womenwear', 'J', 'Cardigans', 10, 'Garments', 10, 'Womens Knitwear', 10, 'Knitwear', 'Cozy knit cardigan');
 
--- Insert sample transactions
+`-- Insert sample transactions`
 INSERT INTO transactions (transaction_date, customer_id, article_id, price, sales_channel_id) VALUES
 ('2024-01-15', 'c001', 'a001', 79.99, 1),
 ('2024-01-15', 'c001', 'a002', 19.99, 1),
@@ -123,7 +124,7 @@ INSERT INTO transactions (transaction_date, customer_id, article_id, price, sale
 ('2024-01-26', 'c005', 'a003', 199.99, 1),
 ('2024-01-27', 'c006', 'a004', 49.99, 1),
 ('2024-01-28', 'c007', 'a001', 79.99, 2),
-('2024-01-29', 'c008', 'a008', 39.99, 1);`
+('2024-01-29', 'c008', 'a008', 39.99, 1);
 
 ## Step 2 - settings for Claude Desktop 
 Download Claude Desktop - https://claude.ai/download
