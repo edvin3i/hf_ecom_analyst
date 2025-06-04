@@ -16,7 +16,7 @@ When you're inside your database (see command in the top) - you can create table
 -- Drop tables if they already exist to ensure clean migration`
 DROP TABLE IF EXISTS transactions;\
 DROP TABLE IF EXISTS articles;\
-DROP TABLE IF EXISTS customers;\
+DROP TABLE IF EXISTS customers;
 
 `-- Create the customers table`\
 CREATE TABLE customers (\
@@ -87,7 +87,7 @@ INSERT INTO customers (customer_id, first_name, active, club_member_status, fash
 ('c007', 'Isabella', false, 'LEFT CLUB', 'None', 26, '10007'),\
 ('c008', 'Noah', true, 'ACTIVE', 'Regularly', 29, '10008'),\
 ('c009', 'Mia', true, 'PRE_CREATE', 'Monthly', 33, '10009'),\
-('c010', 'Liam', true, 'ACTIVE', 'Regularly', 41, '10010');\
+('c010', 'Liam', true, 'ACTIVE', 'Regularly', 41, '10010');
 
 `-- Insert sample articles`\
 
@@ -131,16 +131,16 @@ Download Claude Desktop - https://claude.ai/download
 
 Run it and edit settings (Settings -> Developer -> Edit config). Open file claude_desktop_config.json and insert these settings
 `{
-  "mcpServers": {\
-    "ecommerce-server": {\
-      "command": "python3",\
-      "args": ["/Users/bakytn/Desktop/ecole42/hf_ecom_analyst/mcp-server/mcp_server_only.py"],\
-      "env": {\
-        "DB_HOST": "localhost",\
-        "DB_PORT": "5432",\
-        "DB_NAME": "postgres",\
-        "DB_USER": "postgres",\
-        "DB_PASSWORD": "mypassword"\
+  "mcpServers": {
+    "ecommerce-server": {
+      "command": "python3",
+      "args": ["/Users/bakytn/Desktop/ecole42/hf_ecom_analyst/mcp-server/mcp_server_only.py"],
+      "env": {
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_NAME": "postgres",
+        "DB_USER": "postgres",
+        "DB_PASSWORD": "mypassword"
       }
     }
   }
