@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: pgvector_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      -  pgdb_volume:/var/lib/postgresql/data
+      - ./containers/postgresql/init:/docker-entrypoint-initdb.d
+    networks:
+      - extsvcs
+
+volumes:
+  pgdb_volume:
+
+networks:
+  extsvcs:
