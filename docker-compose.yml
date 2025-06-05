@@ -14,6 +14,18 @@ services:
       - ./containers/postgresql/init:/docker-entrypoint-initdb.d
     networks:
       - extsvcs
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "80"
+    networks:
+      - extsvcs
 
 volumes:
   pgdb_volume:
