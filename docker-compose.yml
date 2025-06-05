@@ -17,6 +17,8 @@ services:
 
 volumes:
   pgdb_volume:
+    external: true
 
 networks:
   extsvcs:
+    external: true
