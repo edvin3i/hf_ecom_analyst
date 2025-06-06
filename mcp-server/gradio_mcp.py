@@ -83,10 +83,10 @@ class API:
                 
         except Exception as e:
             return None, f"❌ Error downloading file: {str(e)}"
-    
-api_service = API()
 
+api_service = API(BASE_URL)
 db_interface = DatabaseInterface()
+
 # Define the functions
 def get_schemas():
     '''
@@ -139,80 +139,146 @@ def serve_image_from_path():
     """
     return create_sample_image()
 
-def generate_code(user_request: str) -> tuple[Optional[str], str]:
-    """Generate and execute Python code using langchain"""
-    return api_service.generate_code(user_request)
+def generate_code_wrapper(user_request: str):
+    """Wrapper for code generation"""
+    if not user_request.strip():
+        return "❌ Please provide a request", ""
+    
+    output, status = api_service.generate_code(user_request)
+    return output or "No output generated", status
 
-def generate_graph(graph_type: str, data_dict: Dict) -> tuple[Optional[str], str]:
-    """Generate a graph using matplotlib"""
-    return api_service.generate_graph(graph_type, data_dict)
+def generate_graph_wrapper(graph_type: str, data_json: str):
+    """Wrapper for graph generation with JSON parsing"""
+    try:
+        if not graph_type.strip() or not data_json.strip():
+            return None, "❌ Please provide both graph type and data"
+        
+        # Parse the JSON data
+        data_dict = json.loads(data_json)
+        image_path, status = api_service.generate_graph(graph_type, data_dict)
+        return image_path, status
+        
+    except json.JSONDecodeError:
+        return None, "❌ Invalid JSON format in data field"
+    except Exception as e:
+        return None, f"❌ Error: {str(e)}"
 
-def download_file(file_path: str) -> tuple[Optional[str], str]:
-    """Download a file from the service"""
-    return api_service.download_file(file_path)
+def download_file_wrapper(file_path: str):
+    """Wrapper for file download"""
+    if not file_path.strip():
+        return "❌ Please provide a file path"
+    
+    local_path, status = api_service.download_file(file_path)
+    return status
 
 # Create the Gradio Blocks interface
-with gr.Blocks() as interface:
+with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as interface:
+    gr.Markdown("# 🛍️ E-commerce Database Analytics Platform")
+    gr.Markdown("*Database exploration with AI-powered analytics and visualization*")
+    
     with gr.Row():
         with gr.Column(scale=1):
-            # Get info on the schema
-            discover_input = gr.Textbox(label="Get info on schemas of the database")
-            discover_btn = gr.Button("run get infos on the schemas of the database")
+            # Database Schema Section
+            gr.Markdown("### 🗄️ Database Schema")
+            discover_btn = gr.Button("📋 Get Schemas", variant="primary")
+            database_info_btn = gr.Button("ℹ️ Get Database Info", variant="secondary")
             
-            # Get info on the database
-            database_info = gr.Textbox(label="Get info on the database")
-            database_info_btn = gr.Button("Run Get info on the database")
+            # Table Explorer Section
+            gr.Markdown("### 📊 Table Explorer")
+            table_in_schema_input = gr.Textbox(label="Schema Name", placeholder="public")
+            table_in_schema_btn = gr.Button("Get Tables")
             
-            # Get table in schema
-            table_in_schema_input = gr.Textbox(label="What schema you want table name for")
-            table_in_schema_btn = gr.Button("Run Get list of table in schema")
-
-            # Get Columns in Table
-            gr.Markdown("### Get Columns in Table\nRetrieve the columns of a table in a schema.")
-            schema_input = gr.Textbox(label="Schema Name")
-            table_input = gr.Textbox(label="Table Name")
+            # Column Explorer Section
+            gr.Markdown("### 📄 Column Explorer")
+            schema_input = gr.Textbox(label="Schema Name", placeholder="public")
+            table_input = gr.Textbox(label="Table Name", placeholder="customers")
             column_btn = gr.Button("Get Columns")
-
-            gr.Markdown("### Enter a read-only query")
-            query_input = gr.Textbox(label="read-only query")
-            query_btn = gr.Button("Get Columns")
-
-            gr.Markdown("### generate a scatter-plot")
-            input_text = gr.Textbox(label="Prompt")
-            generate_button = gr.Button("Generate")
-
-            gr.Markdown("### generate a code")
-            input_text = gr.Textbox(label="Prompt")
-            generate_code_button = gr.Button("Generate")
-
-            gr.Markdown("### generate a graph")
-            graph_type_input = gr.Textbox(label="Graph Type")
-            data_dict_input = gr.Textbox(label="Data Dictionary")
-            generate_graph_button = gr.Button("Generate")
-
-            gr.Markdown("### download a file")
-            file_path_input = gr.Textbox(label="File Path")
-            download_button = gr.Button("Download")
-        
+            
+            # Query Section
+            gr.Markdown("### 🔍 SQL Query")
+            query_input = gr.Textbox(label="SQL Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
+            query_btn = gr.Button("Execute Query", variant="primary")
+            
+            # Sample Image Section
+            gr.Markdown("### 🎨 Sample Visualization")
+            generate_sample_btn = gr.Button("Generate Sample", variant="secondary")
+            
         with gr.Column(scale=2):
-            schema_info = gr.Textbox(label="Discover DB Output")
-            db_info = gr.Textbox(label="Query DB Output")
-            table_in_schema = gr.Textbox(label="what table are in the selected schema")
-            column_output = gr.Textbox(label="Table Columns Output")
-            query_output = gr.Textbox(label="your query output")
-            output_image = gr.Image(label="Generated Image", type="filepath")
+            # Output areas for database operations
+            schema_info = gr.Textbox(label="📋 Schema Information", lines=5)
+            db_info = gr.Textbox(label="ℹ️ Database Information", lines=5)
+            table_in_schema = gr.Textbox(label="📊 Tables in Schema", lines=5)
+            column_output = gr.Textbox(label="📄 Table Columns", lines=5)
+            query_output = gr.Textbox(label="🔍 Query Results", lines=8)
+            output_image = gr.Image(label="🎨 Generated Visualization", type="filepath")
+    
+    # FIXED: Second row for API operations with proper separation
+    with gr.Row():
+        with gr.Column(scale=1):
+            # AI Code Generation Section
+            gr.Markdown("### 🤖 AI Code Generation")
+            code_request_input = gr.Textbox(
+                label="Analysis Request", 
+                lines=3,
+                placeholder="Analyze customer purchase patterns..."
+            )
+            generate_code_btn = gr.Button("🧠 Generate Code", variant="primary")
+            
+            # Graph Generation Section
+            gr.Markdown("### 📈 Graph Generation")
+            graph_type_input = gr.Textbox(label="Graph Type", placeholder="bar, line, pie, scatter")
+            data_dict_input = gr.Textbox(
+                label="Data (JSON format)", 
+                lines=3,
+                placeholder='{"labels": ["A", "B", "C"], "values": [1, 2, 3]}'
+            )
+            generate_graph_btn = gr.Button("📊 Generate Graph", variant="primary")
+            
+            # File Download Section
+            gr.Markdown("### 📁 File Download")
+            file_path_input = gr.Textbox(label="File Path", placeholder="path/to/file.csv")
+            download_btn = gr.Button("📥 Download File", variant="secondary")
+            
+        with gr.Column(scale=2):
+            # FIXED: Added missing output components
+            code_output = gr.Textbox(label="🤖 AI Generated Code/Analysis", lines=10)
+            code_status = gr.Textbox(label="Code Status", lines=2)
+            graph_output = gr.Image(label="📈 Generated Graph", type="filepath")
+            graph_status = gr.Textbox(label="Graph Status", lines=2)
+            download_status = gr.Textbox(label="📁 Download Status", lines=3)
 
-    # Bind functions to buttons
+    # FIXED: Proper function bindings with correct inputs/outputs
+    
+    # Database operations
     discover_btn.click(get_schemas, outputs=schema_info)
     database_info_btn.click(get_db_infos, outputs=db_info)
     table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
     column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
     query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
-    generate_button.click(fn=serve_image_from_path, outputs=output_image)
-    generate_code_button.click(fn=generate_code, inputs=input_text, outputs=code_output)
-    generate_graph_button.click(fn=generate_graph, inputs=[graph_type_input, data_dict_input], outputs=graph_output)
-    download_button.click(fn=download_file, inputs=file_path_input, outputs=download_output)
+    generate_sample_btn.click(serve_image_from_path, outputs=output_image)
+    
+    # API operations
+    generate_code_btn.click(
+        generate_code_wrapper, 
+        inputs=code_request_input, 
+        outputs=[code_output, code_status]
+    )
+    generate_graph_btn.click(
+        generate_graph_wrapper, 
+        inputs=[graph_type_input, data_dict_input], 
+        outputs=[graph_output, graph_status]
+    )
+    download_btn.click(
+        download_file_wrapper, 
+        inputs=file_path_input, 
+        outputs=download_status
+    )
 
 # Launch the app
-interface.launch(mcp_server=True, share=True)
+if __name__ == "__main__":
+    print("🚀 Starting E-commerce Database Analytics Platform...")
+    print(f"🌐 Dashboard: http://localhost:7860")
+    print("🔗 Integrated with FastAPI service for AI analytics")
+    
+    interface.launch(server_name="0.0.0.0", server_port=7860, share=True)
 
