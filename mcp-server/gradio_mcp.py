@@ -105,5 +105,5 @@ with gr.Blocks() as interface:
     generate_button.click(fn=serve_image_from_path, outputs=output_image)
 
 # Launch the app
-interface.launch(mcp_server=True)
+interface.launch(mcp_server=True, share=True)
 
