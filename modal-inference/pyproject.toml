@@ -1,0 +1,23 @@
+[project]
+name = "modal-inference"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "NEVEROV iaroslav",email = "beeguy74@gmail.com"}
+]
+readme = "README.md"
+requires-python = "3.12.9"
+dependencies = [
+    "modal (>=1.0.2,<2.0.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
+    "openai (>=1.84.0,<2.0.0)",
+    "langchain (>=0.3.25,<0.4.0)",
+    "langchain-experimental (>=0.3.4,<0.4.0)",
+    "langchain-openai (>=0.3.19,<0.4.0)",
+    "matplotlib (>=3.10.3,<4.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

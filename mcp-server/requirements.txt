@@ -1,5 +1,6 @@
 mcp>=1.0.0
 gradio>=4.0.0
+gradio[mcp]
 psycopg2-binary>=2.9.0
 pandas>=2.0.0
 sqlalchemy>=2.0.0
