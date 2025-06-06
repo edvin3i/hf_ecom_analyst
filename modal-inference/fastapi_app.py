@@ -69,7 +69,7 @@ def fastapi_app():
         data: str  # JSON formatted string containing the data for visualization
         
         class Config:
-            schema_extra = {
+            json_schema_extra = {
                 "example": {
                     "graph_type": "bar",
                     "data": '{"labels": ["A", "B", "C"], "values": [1, 2, 3]}'
@@ -81,11 +81,11 @@ def fastapi_app():
         image_path: str
 
     @web_app.get("/health")
-    async def health_check():
+    async def healthCheck():
         return {"status": "ok"}
 
     @web_app.post("/generate-code", response_model=CodeResponse)
-    async def generate_and_run_python_code(request: CodeRequest):
+    async def generateAndRunPythonCode(request: CodeRequest):
         """
         Generate and run python code using langchain
         """
@@ -95,7 +95,7 @@ def fastapi_app():
         return CodeResponse(output=response["output"])
 
     @web_app.post("/generate-graph")
-    async def generate_graph_endpoint(request: GraphRequest):
+    async def generateGraph(request: GraphRequest):
         """
         Generate a graph through matplotlib using langchain agent with specified graph type and data
         
@@ -109,7 +109,7 @@ def fastapi_app():
                   - Scatter: '{"x": [1, 2, 3, 4], "y": [10, 20, 25, 30]}'
         
         Returns:
-            GraphResponse with success message and file path to the generated image
+            FileResponse with the generated graph image
         """
         import json
         
@@ -136,13 +136,18 @@ def fastapi_app():
             executor, lambda: agent_executor.invoke({"input": prompt})
         )
         
-        return GraphResponse(
-            message="Graph generated successfully", 
-            image_path=graph_path
+        # Check if file was created successfully
+        if not os.path.exists(graph_path):
+            raise HTTPException(status_code=500, detail="Failed to generate graph file")
+        
+        return FileResponse(
+            path=graph_path,
+            filename=graph_filename,
+            media_type='image/png'
         )
 
     @web_app.get("/download-file")
-    async def download_file(file_path: str):
+    async def downloadFile(file_path: str):
         """
         Download a file by its path from the volume storage
         """
