@@ -225,7 +225,6 @@ class DatabaseInterface:
         print("=============>", VIEWS_SQL_FILE)
         if not VIEWS_SQL_FILE:
             return "❌ VIEWS_SQL_FILE environment variable not set"
-        print("=============> - success", VIEWS_SQL_FILE)
         return self.execute_sql_file(VIEWS_SQL_FILE)
 
     def read_only_query(self, query):

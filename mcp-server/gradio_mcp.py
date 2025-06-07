@@ -305,28 +305,25 @@ with gr.Blocks(title="View Management") as tab3:
         with gr.Column(scale=1):
             gr.Markdown("### 📊 Analytics Views Management")
             create_analytics_btn = gr.Button("📈 Create All Analytics Views", variant="primary", size="lg")
-            
-            # gr.Markdown("### 📄 Custom SQL File Execution")
-            # sql_file_input = gr.Textbox(
-            #     label="SQL File Path", 
-            #     placeholder="./sql/custom_queries.sql",
-            #     info="Execute SQL commands from file"
-            # )
-            # execute_sql_file_btn = gr.Button("⚡ Execute SQL File", variant="secondary")
-            
-            # gr.Markdown("### 🔧 Individual View Creation")
-            # new_view_name = gr.Textbox(label="View Name", placeholder="my_custom_view")
-            # new_view_query = gr.Textbox(
-            #     label="View Query (SQL)", 
-            #     lines=4,
-            #     placeholder="SELECT * FROM customers WHERE age > 25"
-            # )
-            # create_single_view_btn = gr.Button("🎯 Create Single View", variant="primary")
-            
+        with gr.Column(scale=2):
+            views_creation_output = gr.Textbox(
+                label="📈 Views Creation Status", 
+                lines=5,
+                info="Status of analytics views creation"
+            )
+    with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### 📋 View Browser")
             refresh_views_btn = gr.Button("🔄 Refresh View List", variant="secondary")
-            
+        with gr.Column(scale=2):
+                views_list_output = gr.Textbox(
+                label="📋 Available Views", 
+                lines=10,
+                info="List of all database views"
+            )
+                
+    with gr.Row():
+        with gr.Column(scale=1):
             gr.Markdown("### 🔍 View Content Explorer")
             view_name_input = gr.Textbox(
                 label="View Name", 
@@ -339,63 +336,30 @@ with gr.Blocks(title="View Management") as tab3:
                 info="Number of rows to display (1-1000)"
             )
             view_content_btn = gr.Button("👁️ Show View Content", variant="secondary")
-            
-            gr.Markdown("### 🗑️ View Management")
-            delete_view_name = gr.Textbox(label="View Name to Delete", placeholder="view_to_delete")
-            delete_view_btn = gr.Button("🗑️ Delete View", variant="stop")
-
-    with gr.Row():
-        with gr.Column(scale=1):
-            views_creation_output = gr.Textbox(
-                label="📈 Views Creation Status", 
-                lines=5,
-                info="Status of analytics views creation"
-            )
-            sql_file_output = gr.Textbox(
-                label="📄 SQL File Execution Results", 
-                lines=5,
-                info="Results from SQL file execution"
-            )
-            single_view_output = gr.Textbox(
-                label="🎯 Individual View Status", 
-                lines=3,
-                info="Status of single view creation"
-            )
-            
-        with gr.Column(scale=1):
-            views_list_output = gr.Textbox(
-                label="📋 Available Views", 
-                lines=10,
-                info="List of all database views"
-            )
-            view_content_output = gr.Textbox(
+        with gr.Column(scale=2):
+                view_content_output = gr.Textbox(
                 label="🔍 View Content", 
                 lines=10,
                 info="Sample data from selected view"
             )
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("### 🗑️ View Management")
+            delete_view_name = gr.Textbox(label="View Name to Delete", placeholder="view_to_delete")
+            delete_view_btn = gr.Button("🗑️ Delete View", variant="stop")
+        with gr.Column(scale=2):
             delete_status_output = gr.Textbox(
                 label="🗑️ Deletion Status", 
                 lines=2,
                 info="View deletion results"
             )
-
+    
     # Event handlers for Tab 3
     create_analytics_btn.click(
         create_analytics_views_from_file, 
         outputs=views_creation_output
     )
-
-    # execute_sql_file_btn.click(
-    #     execute_custom_sql_file, 
-    #     inputs=sql_file_input, 
-    #     outputs=sql_file_output
-    # )
-
-    # create_single_view_btn.click(
-    #     create_individual_view,
-    #     inputs=[new_view_name, new_view_query],
-    #     outputs=single_view_output
-    # )
 
     refresh_views_btn.click(
         get_all_views,
