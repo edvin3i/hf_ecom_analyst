@@ -1,7 +1,9 @@
+import ast
 import gradio as gr
 from db_work import DatabaseInterface
 import os
 from PIL import Image
+import var_stats
 
 db_interface = DatabaseInterface()
 # Define the functions
@@ -48,13 +50,56 @@ def create_sample_image():
         img.save(img_path)
     return img_path
 
-def serve_image_from_path():
-    """
-        get a scatter plot of 2 variables.
-        input type: [[list_x], [list_y]]
-        it is up to you to determine if the variable need to be standardize or not
-    """
-    return create_sample_image()
+def do_annova(groups, min_sample_size=0):
+    '''
+		this function runs the annova on the dataset and render the associated F_score and p_value
+		groups is a dict that represent the population measures list for each sub-groups. it has the following pattern:
+		groups = {
+			"type_1": [x_0, x_1, ..., x_n],
+			"type_2": [x_0, x_1, ..., x_n],
+			"type_3": [x_0, x_1, ..., x_n],
+			...,
+			"type_p": [x_0, x_1, ..., x_n],
+		}
+
+		min_sample_size is used to exclude categories that does not have enough measurement.
+		default = 0: all categories are selected
+
+        return type is: dict
+        {
+            "F-statistic": round(f_stat, 3),
+            "p-value": round(p_value, 3)
+        }
+	'''
+    data_dict = ast.literal_eval(groups)
+
+    return var_stats.anova(categories=data_dict, min_sample_size=int(min_sample_size))
+
+def do_tukey_test(groups, min_sample_size=0):
+    '''
+		this function runs a Tukey's HSD (Honestly Significant Difference) test — a post-hoc analysis following ANOVA. 
+	    It tells you which specific pairs of groups differ significantly in their means
+        IT is meant to be used after you run a successful anova and you obtain sgnificant F-satatistics and p-value
+		categories is a dict that represent the population measures list for each categories. it has the following pattern:
+		categories = {
+			"type_1": [x_0, x_1, ..., x_n],
+			"type_2": [x_0, x_1, ..., x_n],
+			"type_3": [x_0, x_1, ..., x_n],
+			...,
+			"type_p": [x_0, x_1, ..., x_n],
+		}
+
+		min_sample_size is used to exclude categories that does not have enough measurement.
+		default = 0: all categories are selected
+
+        the return result is the raw dataframe that correspond to the pair wize categorie that reject the hypothesis of non statistically difference between two group
+        the signature of the dataframe is the following:
+        group1 | group2 | meandiff p-adj | lower | upper | reject (only true)
+    
+    '''
+
+    data_dict = ast.literal_eval(groups)
+    return var_stats.tukey_test(categories=data_dict, min_sample_size=int(min_sample_size))
 
 # Create the Gradio Blocks interface
 with gr.Blocks() as interface:
@@ -82,17 +127,25 @@ with gr.Blocks() as interface:
             query_input = gr.Textbox(label="read-only query")
             query_btn = gr.Button("Get Columns")
 
-            gr.Markdown("### generate a scatter-plot")
-            input_text = gr.Textbox(label="Prompt")
-            generate_button = gr.Button("Generate")
-        
+            gr.Markdown("### enter a dict that comply to annova function")
+            annova_input = gr.Textbox(label="annova")
+            annova_min_sample_input = gr.Textbox(label="min sample size for annova")
+            annova_btn = gr.Button("run annova")
+
+            gr.Markdown("### enter a dict that comply to tukey function")
+            tukey_input = gr.Textbox(label="tukey")
+            tukey_min_sample_input = gr.Textbox(label="min sample size for tukey")
+            tukey_btn = gr.Button("run tukey")
+
+
         with gr.Column(scale=2):
             schema_info = gr.Textbox(label="Discover DB Output")
             db_info = gr.Textbox(label="Query DB Output")
             table_in_schema = gr.Textbox(label="what table are in the selected schema")
             column_output = gr.Textbox(label="Table Columns Output")
             query_output = gr.Textbox(label="your query output")
-            output_image = gr.Image(label="Generated Image", type="filepath")
+            annova_output = gr.Textbox(label="annova output")
+            tukey_output = gr.Textbox(label="tukey output")
 
 
 
@@ -102,7 +155,8 @@ with gr.Blocks() as interface:
     table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
     column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
     query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
-    generate_button.click(fn=serve_image_from_path, outputs=output_image)
+    annova_btn.click(do_annova, inputs=[annova_input, annova_min_sample_input], outputs=annova_output)
+    tukey_btn.click(do_tukey_test, inputs=[tukey_input, tukey_min_sample_input], outputs=tukey_output)
 
 # Launch the app
 interface.launch(mcp_server=True, share=True)
