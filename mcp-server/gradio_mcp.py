@@ -147,13 +147,13 @@ def create_analytics_views_from_file():
     except Exception as e:
         return f"❌ Error creating views: {str(e)}"
 
-def execute_custom_sql_file(file_path: str):
-    if not file_path.strip():
-        return "❌ Please provide a file path"
-    return db_interface.execute_sql_file(file_path)
+# def execute_custom_sql_file(file_path: str):
+#     if not file_path.strip():
+#         return "❌ Please provide a file path"
+#     return db_interface.execute_sql_file(file_path)
 
-def create_individual_view(view_name: str, view_query: str):
-    return db_interface.create_view(view_name, view_query)
+# def create_individual_view(view_name: str, view_query: str):
+#     return db_interface.create_view(view_name, view_query)
 
 def get_all_views():
     try:
@@ -306,22 +306,22 @@ with gr.Blocks(title="View Management") as tab3:
             gr.Markdown("### 📊 Analytics Views Management")
             create_analytics_btn = gr.Button("📈 Create All Analytics Views", variant="primary", size="lg")
             
-            gr.Markdown("### 📄 Custom SQL File Execution")
-            sql_file_input = gr.Textbox(
-                label="SQL File Path", 
-                placeholder="./sql/custom_queries.sql",
-                info="Execute SQL commands from file"
-            )
-            execute_sql_file_btn = gr.Button("⚡ Execute SQL File", variant="secondary")
+            # gr.Markdown("### 📄 Custom SQL File Execution")
+            # sql_file_input = gr.Textbox(
+            #     label="SQL File Path", 
+            #     placeholder="./sql/custom_queries.sql",
+            #     info="Execute SQL commands from file"
+            # )
+            # execute_sql_file_btn = gr.Button("⚡ Execute SQL File", variant="secondary")
             
-            gr.Markdown("### 🔧 Individual View Creation")
-            new_view_name = gr.Textbox(label="View Name", placeholder="my_custom_view")
-            new_view_query = gr.Textbox(
-                label="View Query (SQL)", 
-                lines=4,
-                placeholder="SELECT * FROM customers WHERE age > 25"
-            )
-            create_single_view_btn = gr.Button("🎯 Create Single View", variant="primary")
+            # gr.Markdown("### 🔧 Individual View Creation")
+            # new_view_name = gr.Textbox(label="View Name", placeholder="my_custom_view")
+            # new_view_query = gr.Textbox(
+            #     label="View Query (SQL)", 
+            #     lines=4,
+            #     placeholder="SELECT * FROM customers WHERE age > 25"
+            # )
+            # create_single_view_btn = gr.Button("🎯 Create Single View", variant="primary")
             
         with gr.Column(scale=1):
             gr.Markdown("### 📋 View Browser")
@@ -385,17 +385,17 @@ with gr.Blocks(title="View Management") as tab3:
         outputs=views_creation_output
     )
 
-    execute_sql_file_btn.click(
-        execute_custom_sql_file, 
-        inputs=sql_file_input, 
-        outputs=sql_file_output
-    )
+    # execute_sql_file_btn.click(
+    #     execute_custom_sql_file, 
+    #     inputs=sql_file_input, 
+    #     outputs=sql_file_output
+    # )
 
-    create_single_view_btn.click(
-        create_individual_view,
-        inputs=[new_view_name, new_view_query],
-        outputs=single_view_output
-    )
+    # create_single_view_btn.click(
+    #     create_individual_view,
+    #     inputs=[new_view_name, new_view_query],
+    #     outputs=single_view_output
+    # )
 
     refresh_views_btn.click(
         get_all_views,
@@ -431,4 +431,4 @@ if __name__ == "__main__":
     print(f"🌐 Dashboard: http://localhost:7860")
     print("🔗 Integrated with FastAPI service for AI analytics")
     
-    interface.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    interface.launch(server_name="0.0.0.0", server_port=7860, share=True, mcp_server=True)
