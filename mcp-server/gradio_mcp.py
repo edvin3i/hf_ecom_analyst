@@ -4,8 +4,91 @@ from db_work import DatabaseInterface
 import os
 from PIL import Image
 import var_stats
+import requests
+from typing import Optional, Dict
+import json
+import time
 
+BASE_URL = "https://beeguy74--example-fastapi-fastapi-app.modal.run"
+
+class API:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.session = requests.Session()
+        self.session.headers.update({"Content-Type": "application/json"})
+    
+    def generate_code(self, user_request: str) -> tuple[Optional[str], str]:
+        """Generate and execute Python code using langchain"""
+        try:
+            payload = {"user_request": user_request}
+            response = self.session.post(
+                f"{self.base_url}/generate-code",
+                json=payload,
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("output", ""), "✅ Code executed successfully"
+            else:
+                return None, f"❌ Code generation failed: {response.status_code} - {response.text}"
+                
+        except Exception as e:
+            return None, f"❌ Error generating code: {str(e)}"
+    
+    def generate_graph(self, graph_type: str, data_dict: Dict) -> tuple[Optional[str], str]:
+        """Generate a graph using matplotlib"""
+        try:
+            payload = {
+                "graph_type": graph_type,
+                "data": json.dumps(data_dict)
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/generate-graph",
+                json=payload,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                # Save the image temporarily
+                timestamp = int(time.time())
+                image_path = f"./graph_{graph_type}_{timestamp}.png"
+                with open(image_path, "wb") as f:
+                    f.write(response.content)
+                return image_path, f"✅ {graph_type.title()} chart generated successfully"
+            else:
+                return None, f"❌ Graph generation failed: {response.status_code} - {response.text}"
+                
+        except Exception as e:
+            return None, f"❌ Error generating graph: {str(e)}"
+    
+    def download_file(self, file_path: str) -> tuple[Optional[str], str]:
+        """Download a file from the service"""
+        try:
+            params = {"file_path": file_path}
+            response = self.session.get(
+                f"{self.base_url}/download-file",
+                params=params,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                # Save the downloaded file
+                timestamp = int(time.time())
+                local_path = f"./downloaded_{timestamp}_{os.path.basename(file_path)}"
+                with open(local_path, "wb") as f:
+                    f.write(response.content)
+                return local_path, f"✅ File downloaded: {file_path}"
+            else:
+                return None, f"❌ Download failed: {response.status_code} - {response.text}"
+                
+        except Exception as e:
+            return None, f"❌ Error downloading file: {str(e)}"
+
+api_service = API(BASE_URL)
 db_interface = DatabaseInterface()
+
 # Define the functions
 def get_schemas():
     '''
@@ -101,26 +184,59 @@ def do_tukey_test(groups, min_sample_size=0):
     data_dict = ast.literal_eval(groups)
     return var_stats.tukey_test(categories=data_dict, min_sample_size=int(min_sample_size))
 
+def generate_code_wrapper(user_request: str):
+    """Wrapper for code generation"""
+    if not user_request.strip():
+        return "❌ Please provide a request", ""
+    
+    output, status = api_service.generate_code(user_request)
+    return output or "No output generated", status
+
+def generate_graph_wrapper(graph_type: str, data_json: str):
+    """Wrapper for graph generation with JSON parsing"""
+    try:
+        if not graph_type.strip() or not data_json.strip():
+            return None, "❌ Please provide both graph type and data"
+        
+        # Parse the JSON data
+        data_dict = json.loads(data_json)
+        image_path, status = api_service.generate_graph(graph_type, data_dict)
+        return image_path, status
+        
+    except json.JSONDecodeError:
+        return None, "❌ Invalid JSON format in data field"
+    except Exception as e:
+        return None, f"❌ Error: {str(e)}"
+
+def download_file_wrapper(file_path: str):
+    """Wrapper for file download"""
+    if not file_path.strip():
+        return "❌ Please provide a file path"
+    
+    local_path, status = api_service.download_file(file_path)
+    return status
+
 # Create the Gradio Blocks interface
-with gr.Blocks() as interface:
+with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as interface:
+    gr.Markdown("# 🛍️ E-commerce Database Analytics Platform")
+    gr.Markdown("*Database exploration with AI-powered analytics and visualization*")
+    
     with gr.Row():
         with gr.Column(scale=1):
-            # Get info on the schema
-            discover_input = gr.Textbox(label="Get info on schemas of the database")
-            discover_btn = gr.Button("run get infos on the schemas of the database")
+            # Database Schema Section
+            gr.Markdown("### 🗄️ Database Schema")
+            discover_btn = gr.Button("📋 Get Schemas", variant="primary")
+            database_info_btn = gr.Button("ℹ️ Get Database Info", variant="secondary")
             
-            # Get info on the database
-            database_info = gr.Textbox(label="Get info on the database")
-            database_info_btn = gr.Button("Run Get info on the database")
+            # Table Explorer Section
+            gr.Markdown("### 📊 Table Explorer")
+            table_in_schema_input = gr.Textbox(label="Schema Name", placeholder="public")
+            table_in_schema_btn = gr.Button("Get Tables")
             
-            # Get table in schema
-            table_in_schema_input = gr.Textbox(label="What schema you want table name for")
-            table_in_schema_btn = gr.Button("Run Get list of table in schema")
-
-            # Get Columns in Table
-            gr.Markdown("### Get Columns in Table\nRetrieve the columns of a table in a schema.")
-            schema_input = gr.Textbox(label="Schema Name")
-            table_input = gr.Textbox(label="Table Name")
+            # Column Explorer Section
+            gr.Markdown("### 📄 Column Explorer")
+            schema_input = gr.Textbox(label="Schema Name", placeholder="public")
+            table_input = gr.Textbox(label="Table Name", placeholder="customers")
             column_btn = gr.Button("Get Columns")
 
             gr.Markdown("### Enter a read-only query")
@@ -147,9 +263,9 @@ with gr.Blocks() as interface:
             annova_output = gr.Textbox(label="annova output")
             tukey_output = gr.Textbox(label="tukey output")
 
-
-
-    # Bind functions to buttons
+    # FIXED: Proper function bindings with correct inputs/outputs
+    
+    # Database operations
     discover_btn.click(get_schemas, outputs=schema_info)
     database_info_btn.click(get_db_infos, outputs=db_info)
     table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
@@ -159,5 +275,10 @@ with gr.Blocks() as interface:
     tukey_btn.click(do_tukey_test, inputs=[tukey_input, tukey_min_sample_input], outputs=tukey_output)
 
 # Launch the app
-interface.launch(mcp_server=True, share=True)
+if __name__ == "__main__":
+    print("🚀 Starting E-commerce Database Analytics Platform...")
+    print(f"🌐 Dashboard: http://localhost:7860")
+    print("🔗 Integrated with FastAPI service for AI analytics")
+    
+    interface.launch(server_name="0.0.0.0", server_port=7860, mcp_server=True, share=True)
 
