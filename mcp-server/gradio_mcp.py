@@ -280,5 +280,5 @@ if __name__ == "__main__":
     print(f"🌐 Dashboard: http://localhost:7860")
     print("🔗 Integrated with FastAPI service for AI analytics")
     
-    interface.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    interface.launch(server_name="0.0.0.0", server_port=7860, mcp_server=True, share=True)
 
