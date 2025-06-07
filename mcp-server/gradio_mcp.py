@@ -49,7 +49,6 @@ class API:
             )
             
             if response.status_code == 200:
-                # Save the image temporarily
                 timestamp = int(time.time())
                 image_path = f"./graph_{graph_type}_{timestamp}.png"
                 with open(image_path, "wb") as f:
@@ -72,7 +71,6 @@ class API:
             )
             
             if response.status_code == 200:
-                # Save the downloaded file
                 timestamp = int(time.time())
                 local_path = f"./downloaded_{timestamp}_{os.path.basename(file_path)}"
                 with open(local_path, "wb") as f:
@@ -88,7 +86,7 @@ class API:
 api_service = API(BASE_URL)
 db_interface = DatabaseInterface()
 
-# All function definitions (keeping existing ones)
+# All function definitions (keeping your existing ones)
 def get_schemas():
     return db_interface.list_schemas()
 
@@ -162,13 +160,13 @@ def get_all_views():
         views = db_interface.list_views_detailed()
         if not views:
             return "No views found in database"
-        print("=============> - get_all_views")
+        
         result = []
         for view in views:
             schema, name, owner, definition = view
             short_def = (definition[:100] + "...") if len(definition) > 100 else definition
             result.append(f"📋 {schema}.{name} (Owner: {owner})\n   {short_def}\n")
-        print("=============> - get_all_views - success")
+        
         return "\n".join(result)
     except Exception as e:
         return f"❌ Error listing views: {str(e)}"
@@ -203,11 +201,11 @@ def delete_view(view_name: str):
         return "❌ Please provide a view name"
     return db_interface.drop_view(view_name)
 
-with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as interface:
-    gr.Markdown("# 🛍️ E-commerce Database Analytics Platform")
-    gr.Markdown("*Database exploration with AI-powered analytics and visualization*")
+# TAB 1: Database Operations
+with gr.Blocks(title="Database Operations") as tab1:
+    gr.Markdown("# 🗄️ Database Operations")
+    gr.Markdown("*Explore database schema, tables, and run queries*")
     
-    # Section 1: Database Operations
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### 🗄️ Database Schema")
@@ -238,7 +236,19 @@ with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as
             query_output = gr.Textbox(label="🔍 Query Results", lines=8)
             output_image = gr.Image(label="🎨 Generated Visualization", type="filepath")
     
-    # Section 2: API Operations
+    # Event handlers for Tab 1
+    discover_btn.click(get_schemas, outputs=schema_info)
+    database_info_btn.click(get_db_infos, outputs=db_info)
+    table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
+    column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
+    query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
+    generate_sample_btn.click(serve_image_from_path, outputs=output_image)
+
+# TAB 2: API Operations
+with gr.Blocks(title="AI Analytics") as tab2:
+    gr.Markdown("# 🤖 AI-Powered Analytics")
+    gr.Markdown("*Generate code, create visualizations, and manage files with AI*")
+    
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown("### 🤖 AI Code Generation")
@@ -268,10 +278,28 @@ with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as
             graph_output = gr.Image(label="📈 Generated Graph", type="filepath")
             graph_status = gr.Textbox(label="Graph Status", lines=2)
             download_status = gr.Textbox(label="📁 Download Status", lines=3)
+    
+    # Event handlers for Tab 2
+    generate_code_btn.click(
+        generate_code_wrapper, 
+        inputs=code_request_input, 
+        outputs=[code_output, code_status]
+    )
+    generate_graph_btn.click(
+        generate_graph_wrapper, 
+        inputs=[graph_type_input, data_dict_input], 
+        outputs=[graph_output, graph_status]
+    )
+    download_btn.click(
+        download_file_wrapper, 
+        inputs=file_path_input, 
+        outputs=download_status
+    )
 
-    # Section 3: View Management
-    gr.Markdown("---")
-    gr.Markdown("## 🗄️ **VIEW MANAGEMENT CENTER**")
+# TAB 3: View Management
+with gr.Blocks(title="View Management") as tab3:
+    gr.Markdown("# 🗄️ View Management Center")
+    gr.Markdown("*Create, manage, and explore database views*")
 
     with gr.Row():
         with gr.Column(scale=1):
@@ -350,33 +378,8 @@ with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as
                 lines=2,
                 info="View deletion results"
             )
-    
-    # Database operations
-    discover_btn.click(get_schemas, outputs=schema_info)
-    database_info_btn.click(get_db_infos, outputs=db_info)
-    table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
-    column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
-    query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
-    generate_sample_btn.click(serve_image_from_path, outputs=output_image)
-    
-    # API operations
-    generate_code_btn.click(
-        generate_code_wrapper, 
-        inputs=code_request_input, 
-        outputs=[code_output, code_status]
-    )
-    generate_graph_btn.click(
-        generate_graph_wrapper, 
-        inputs=[graph_type_input, data_dict_input], 
-        outputs=[graph_output, graph_status]
-    )
-    download_btn.click(
-        download_file_wrapper, 
-        inputs=file_path_input, 
-        outputs=download_status
-    )
 
-    # View management operations
+    # Event handlers for Tab 3
     create_analytics_btn.click(
         create_analytics_views_from_file, 
         outputs=views_creation_output
@@ -411,7 +414,16 @@ with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as
         outputs=delete_status_output
     )
 
-    interface.load(get_all_views, outputs=views_list_output)
+    # Auto-refresh views list when this tab loads
+    tab3.load(get_all_views, outputs=views_list_output)
+
+# Create the TabbedInterface
+interface = gr.TabbedInterface(
+    [tab1, tab2, tab3], 
+    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 View Management"],
+    title="E-commerce Database Analytics Platform",
+    theme=gr.themes.Soft()
+)
 
 # Launch the app
 if __name__ == "__main__":
@@ -419,4 +431,4 @@ if __name__ == "__main__":
     print(f"🌐 Dashboard: http://localhost:7860")
     print("🔗 Integrated with FastAPI service for AI analytics")
     
-    interface.launch(server_name="0.0.0.0", server_port=7860, share=True, mcp_server=True)
+    interface.launch(server_name="0.0.0.0", server_port=7860, share=True)
