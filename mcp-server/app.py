@@ -394,7 +394,7 @@ def get_mcp_server_instructions():
     """
     return """
     ## Purpose
-            This MCP server provides comprehensive e-commerce database analytics capabilities, enabling clients to explore database schemas, run queries, create views, perform statistical analysis, and generate AI-powered insights. The server is designed to help users analyze customer behavior, sales patterns, and business metrics from e-commerce data.
+            This MCP server provides comprehensive e-commerce database analytics capabilities, enabling clients to explore database schemas, run queries, perform statistical analysis, and generate AI-powered insights. The server is designed to help users analyze customer behavior, sales patterns, and business metrics from e-commerce data.
                     
             ## 🎯 Use Cases
             This MCP server is designed for:
@@ -446,12 +446,11 @@ def get_mcp_server_instructions():
             ## ✅ Best Practices for MCP Clients
             1. **Start with Discovery**: Always begin by exploring schemas and tables before analysis
             2. **Use Read-Only Queries**: Prefer `run_read_only_query()` for exploration to maintain data safety
-            3. **Leverage Views**: Use `get_all_views()` to find pre-built analytics before creating custom queries
-            4. **Statistical Validation**: Use `do_annova()` before `do_tukey_test()` for proper statistical workflow
-            5. **AI Enhancement**: Use `generate_code_wrapper()` for complex analysis that would be difficult to code manually
-            6. **Clean Up**: Use `drop_table()` to remove temporary analysis tables when done
-            7. **Error Handling**: All functions return status indicators - check for errors before proceeding
-            8. **Data Safety**: Core tables (transactions, customers, articles) are protected from modification"""
+            3. **Statistical Validation**: Use `do_annova()` before `do_tukey_test()` for proper statistical workflow
+            4. **AI Enhancement**: Use `generate_code_wrapper()` for complex analysis that would be difficult to code manually
+            5. **Clean Up**: Use `drop_table()` to remove temporary analysis tables when done
+            6. **Error Handling**: All functions return status indicators - check for errors before proceeding
+            7. **Data Safety**: Core tables (transactions, customers, articles) are protected from modification"""
 
 # TAB 1: Database Operations
 with gr.Blocks(title="Database Operations") as tab1:

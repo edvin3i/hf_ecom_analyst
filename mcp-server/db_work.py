@@ -14,7 +14,6 @@ LIST_SCHEMA=os.getenv('LIST_SCHEMA')
 LIST_DATABASE_INFOS=os.getenv('LIST_DATABASE_INFOS')
 TABLE_IN_SCHEMA=os.getenv('TABLE_IN_SCHEMA')
 COLUMN_IN_TABLE=os.getenv('COLUMN_IN_TABLE')
-VIEWS_SQL_FILE = os.getenv('VIEWS_SQL_FILE')
 
 
 class DatabaseInterface:
@@ -145,48 +144,6 @@ class DatabaseInterface:
         except Exception as connection_error:
             return f"❌ Connection error: {str(connection_error)}"
 
-    def list_views_detailed(self):
-        """List all views with metadata"""
-        query = """
-        SELECT 
-            schemaname,
-            viewname,
-            viewowner,
-            definition
-        FROM pg_views 
-        WHERE schemaname NOT IN ('information_schema', 'pg_catalog')
-        ORDER BY schemaname, viewname
-        """
-        return self.read_only_query(query)
-
-    def get_view_content(self, view_name: str, limit: int = 100):
-        """Get sample content from a view"""
-        try:
-            query = f"SELECT * FROM {view_name} LIMIT {limit}"
-            return self.read_only_query(query)
-        except Exception as e:
-            return f"❌ Error querying view: {str(e)}"
-
-    def drop_view(self, view_name: str):
-        """Drop a specific view"""
-        if not view_name or not view_name.strip():
-            return "❌ View name cannot be empty"
-        
-        try:
-            conn = self.get_db_connection()
-            try:
-                with conn.cursor() as cur:
-                    cur.execute(f"DROP VIEW IF EXISTS {view_name} CASCADE")
-                    conn.commit()
-                    return f"✅ View '{view_name}' dropped successfully"
-            except Exception as e:
-                conn.rollback()
-                return f"❌ Error dropping view: {str(e)}"
-            finally:
-                conn.close()
-        except Exception as e:
-            return f"❌ Connection error: {str(e)}"
-
     def execute_sql_file(self, file_path: str):
         """Execute SQL statements from a file"""
         sql_path = Path(file_path)
@@ -218,13 +175,6 @@ class DatabaseInterface:
                 
         except Exception as e:
             return f"❌ Error reading SQL file: {str(e)}"
-    
-    def create_analytics_views(self):
-        """Create all analytics views from SQL file"""
-        print("=============>", VIEWS_SQL_FILE)
-        if not VIEWS_SQL_FILE:
-            return "❌ VIEWS_SQL_FILE environment variable not set"
-        return self.execute_sql_file(VIEWS_SQL_FILE)
 
     def read_only_query(self, query):
         try:
