@@ -105,9 +105,13 @@ def run_read_only_query(query: str):
     """Run a read only query"""
     return db_interface.read_only_query(query)
 
-def create_temp_table_from_query(table_name: str, source_query: str):
-    """Create a temporary table from a query"""
-    return db_interface.create_temp_table_from_query(table_name, source_query)
+def create_table_from_query(table_name: str, source_query: str):
+    """Create a permanent table from a query"""
+    return db_interface.create_table_from_query(table_name, source_query)
+
+def drop_table(table_name: str):
+    """Drop a table"""
+    return db_interface.drop_table(table_name)
 
 def create_sample_image():
     img_path = "./sample_graph.png"
@@ -290,10 +294,14 @@ with gr.Blocks(title="Database Operations") as tab1:
             query_input = gr.Textbox(label="SQL Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
             query_btn = gr.Button("Execute Query", variant="primary")
 
-            gr.Markdown("### 🔍 Create Temp Table")
-            table_name_input = gr.Textbox(label="Table Name", placeholder="temp_table")
+            gr.Markdown("### 🔍 Create Table")
+            table_name_input = gr.Textbox(label="Table Name", placeholder="table")
             source_query_input = gr.Textbox(label="Source Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
-            create_temp_table_from_query_btn = gr.Button("Create Temp Table", variant="primary")
+            create_table_from_query_btn = gr.Button("Create Table", variant="primary")
+
+            gr.Markdown("### 🔍 Drop Table")
+            drop_table_name_input = gr.Textbox(label="Table Name", placeholder="table")
+            drop_table_btn = gr.Button("Drop Table", variant="primary")
             
             gr.Markdown("### 🎨 Sample Visualization")
             generate_sample_btn = gr.Button("Generate Sample", variant="secondary")
@@ -304,6 +312,8 @@ with gr.Blocks(title="Database Operations") as tab1:
             table_in_schema = gr.Textbox(label="📊 Tables in Schema", lines=5)
             column_output = gr.Textbox(label="📄 Table Columns", lines=5)
             query_output = gr.Textbox(label="🔍 Query Results", lines=8)
+            table_status = gr.Textbox(label="table status")
+            drop_table_status = gr.Textbox(label="drop table status")
             output_image = gr.Image(label="🎨 Generated Visualization", type="filepath")
     
     # Event handlers for Tab 1
@@ -313,7 +323,8 @@ with gr.Blocks(title="Database Operations") as tab1:
     column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
     query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
     generate_sample_btn.click(serve_image_from_path, outputs=output_image)
-    create_temp_table_from_query_btn.click(create_temp_table_from_query, inputs=[table_name_input, source_query_input], outputs=temp_table_status)
+    create_table_from_query_btn.click(create_table_from_query, inputs=[table_name_input, source_query_input], outputs=table_status)
+    drop_table_btn.click(drop_table, inputs=drop_table_name_input, outputs=drop_table_status)
 
 # TAB 2: API Operations
 with gr.Blocks(title="AI Analytics") as tab2:
@@ -471,11 +482,6 @@ with gr.Blocks(title="View Management") as tab3:
 
 
             with gr.Column(scale=2):
-                schema_info = gr.Textbox(label="Discover DB Output")
-                db_info = gr.Textbox(label="Query DB Output")
-                table_in_schema = gr.Textbox(label="what table are in the selected schema")
-                column_output = gr.Textbox(label="Table Columns Output")
-                query_output = gr.Textbox(label="your query output")
                 annova_output = gr.Textbox(label="annova output")
                 tukey_output = gr.Textbox(label="tukey output")
 
