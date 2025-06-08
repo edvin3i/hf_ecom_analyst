@@ -24,7 +24,7 @@ class API:
             response = self.session.post(
                 f"{self.base_url}/generate-code",
                 json=payload,
-                timeout=60
+                timeout=120
             )
             
             if response.status_code == 200:
@@ -47,7 +47,7 @@ class API:
             response = self.session.post(
                 f"{self.base_url}/generate-graph",
                 json=payload,
-                timeout=30
+                timeout=120
             )
             
             if response.status_code == 200:
@@ -69,7 +69,7 @@ class API:
             response = self.session.get(
                 f"{self.base_url}/download-file",
                 params=params,
-                timeout=30
+                timeout=120
             )
             
             if response.status_code == 200:
@@ -203,7 +203,19 @@ def generate_graph_wrapper(graph_type: str, data_json: str):
         return None, f"❌ Error: {str(e)}"
 
 def query_and_generate_graph_wrapper(query: str, graph_type: str):
-    """Runs a query and then generates a graph from its results."""
+    """
+    Executes a SQL query and generates a graph visualization from the results.
+    This function is particularly useful when query results are too large for the context window
+    or when visual representation of data is preferred over tabular format.
+    Args:
+        query (str): SQL query to execute. Must return at least two columns where the first
+                    column represents labels and the second represents values.
+        graph_type (str): Type of graph to generate (e.g., 'bar', 'line', 'pie', etc.).
+    Returns:
+        tuple: A tuple containing:
+            - image_path (str or None): Path to the generated graph image if successful, None if failed
+            - status (str): Status message indicating success or error details
+    """
     if not query.strip():
         return None, "❌ Please provide a SQL query."
     if not graph_type.strip():
@@ -219,48 +231,27 @@ def query_and_generate_graph_wrapper(query: str, graph_type: str):
 
     data_dict = {}
     try:
-        if current_data_source == "postgresql":
-            if isinstance(query_result, list) and len(query_result) > 0:
-                # Assuming first column is labels, second is values
-                # And that there are headers in the first row of the result if it's a list of lists/tuples
-                if isinstance(query_result[0], (list, tuple)) and len(query_result[0]) >= 2:
-                    # Check if the first row looks like headers (strings)
-                    if all(isinstance(item, str) for item in query_result[0]):
-                        headers = query_result[0]
-                        data_rows = query_result[1:]
-                    else: # No headers, assume first col labels, second values
-                        headers = ["labels", "values"] # default headers
-                        data_rows = query_result
+        if isinstance(query_result, list) and len(query_result) > 0:
+            # Assuming first column is labels, second is values
+            # And that there are headers in the first row of the result if it's a list of lists/tuples
+            if isinstance(query_result[0], (list, tuple)) and len(query_result[0]) >= 2:
+                # Check if the first row looks like headers (strings)
+                if all(isinstance(item, str) for item in query_result[0]):
+                    headers = query_result[0]
+                    data_rows = query_result[1:]
+                else: # No headers, assume first col labels, second values
+                    headers = ["labels", "values"] # default headers
+                    data_rows = query_result
 
-                    if not data_rows:
-                         return None, "❌ Query returned headers but no data rows."
+                if not data_rows:
+                        return None, "❌ Query returned headers but no data rows."
 
-                    data_dict["labels"] = [str(row[0]) for row in data_rows]
-                    data_dict["values"] = [row[1] for row in data_rows] # Keep original type for values
-                else:
-                    return None, "❌ Query result format not suitable for graphing (PostgreSQL). Expected at least two columns."
+                data_dict["labels"] = [str(row[0]) for row in data_rows]
+                data_dict["values"] = [row[1] for row in data_rows] # Keep original type for values
             else:
-                return None, "❌ Query returned no data or unexpected format (PostgreSQL)."
-
-        elif current_data_source == "bigquery":
-            if isinstance(query_result, dict) and 'columns' in query_result and 'rows' in query_result:
-                if len(query_result['columns']) >= 2 and query_result['rows']:
-                    label_col_name = query_result['columns'][0]['name']
-                    value_col_name = query_result['columns'][1]['name']
-                    
-                    labels = []
-                    values = []
-                    for row in query_result['rows']:
-                        labels.append(str(row[0])) # first element for label
-                        values.append(row[1]) # second element for value
-                    data_dict["labels"] = labels
-                    data_dict["values"] = values
-                else:
-                    return None, "❌ Query result format not suitable for graphing (BigQuery). Expected at least two columns and some data."
-            else:
-                return None, "❌ Query returned no data or unexpected format (BigQuery)."
+                return None, "❌ Query result format not suitable for graphing (PostgreSQL). Expected at least two columns."
         else:
-            return None, f"❌ Unsupported data source for this operation: {current_data_source}"
+            return None, "❌ Query returned no data or unexpected format (PostgreSQL)."
 
         if not data_dict.get("labels") or not data_dict.get("values"):
              return None, "❌ Failed to extract labels and values from query result."
