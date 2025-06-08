@@ -11,3 +11,4 @@ plotly>=5.0.0  # For interactive visualizations
 seaborn>=0.12.0  # For statistical plots
 asyncio-throttle>=1.0.0  # For rate limiting
 cachetools>=5.0.0  # For caching optimization
+statsmodels>=0.13.0  # For statistical modeling
