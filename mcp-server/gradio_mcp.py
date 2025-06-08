@@ -277,11 +277,12 @@ def embed_text_modal_api(text):
 	return embeddings
 
 def generate_code_wrapper(user_request: str):
-    """### `generate_code_wrapper(user_request: str)`
-            - **Purpose**: Generate Python code based on user request
-            - **Parameters**: `user_request` - Textual description of the analysis
-            - **Returns**: Generated code and status message
-            - **Use Case**: AI-powered code generation for data analysis"""
+	"""
+		### `generate_code_wrapper(user_request: str)`
+		- **Purpose**: Generate Python code based on user request
+		- **Parameters**: `user_request` - Textual description of the analysis
+		- **Returns**: Generated code and status message
+		- **Use Case**: AI-powered code generation for data analysis"""
 	if not user_request.strip():
 		return "❌ Please provide a request", ""
 	
@@ -289,11 +290,12 @@ def generate_code_wrapper(user_request: str):
 	return output or "No output generated", status
 
 def generate_graph_wrapper(graph_type: str, data_json: str):
-    """### `generate_graph_wrapper(graph_type: str, data_json: str)`
-            - **Purpose**: Create visualizations using matplotlib
-            - **Parameters**: `graph_type` - Type of chart (bar, line, pie, scatter)
-            - **Returns**: Image file path and status
-            - **Use Case**: Creating charts and graphs for presentations"""
+	"""
+		### `generate_graph_wrapper(graph_type: str, data_json: str)`
+		- **Purpose**: Create visualizations using matplotlib
+		- **Parameters**: `graph_type` - Type of chart (bar, line, pie, scatter)
+		- **Returns**: Image file path and status
+		- **Use Case**: Creating charts and graphs for presentations"""
 	try:
 		if not graph_type.strip() or not data_json.strip():
 			return None, "❌ Please provide both graph type and data"
@@ -369,9 +371,9 @@ def query_and_generate_graph_wrapper(query: str, graph_type: str):
 
 
 def download_file_wrapper(file_path: str):
-    """### `download_file_wrapper(file_path: str)`
-            - **Purpose**: Download files from the service
-            - **Use Case**: Retrieving generated reports or datasets"""
+	"""### `download_file_wrapper(file_path: str)` 
+	- **Purpose**: Download files from the service 
+	- **Use Case**: Retrieving generated reports or datasets"""
 	if not file_path.strip():
 		return "❌ Please provide a file path"
 	
