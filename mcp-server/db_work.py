@@ -236,3 +236,56 @@ class DatabaseInterface:
                 return result
         finally:
             conn.close()
+
+    def create_table_from_query(self, table_name: str, source_query: str, drop_if_exists: bool = True) -> str:
+        """Create permanent table from any SELECT query"""
+        try:
+            conn = self.get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    # Optional: Drop existing table first
+                    if drop_if_exists and (table_name != "transactions" and table_name != "customers" and table_name != "articles"):
+                        drop_query = f"DROP TABLE IF EXISTS {table_name}"
+                        cur.execute(drop_query)
+                    
+                    # Create permanent table (removed TEMP keyword)
+                    create_query = f"CREATE TABLE {table_name} AS {source_query}"
+                    cur.execute(create_query)
+                    conn.commit()
+                    
+                    # Verify creation and get row count
+                    cur.execute(f"SELECT COUNT(*) FROM {table_name}")
+                    count = cur.fetchone()[0]
+                    
+                    print(f"✅ Table '{table_name}' created successfully with {count} rows")
+                    return f"✅ Table '{table_name}' created successfully with {count} rows"
+                    
+            except Exception as e:
+                conn.rollback()
+                return f"❌ Error creating table: {str(e)}"
+            finally:
+                conn.close()
+        except Exception as e:
+            return f"❌ Connection error: {str(e)}"
+    
+    def drop_table(self, table_name: str, cascade: bool = False) -> str:
+        """Drop a table"""
+        try:
+            conn = self.get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    cascade_clause = " CASCADE" if cascade else ""
+                    if table_name != "transactions" and table_name != "customers" and table_name != "articles":
+                        drop_query = f"DROP TABLE IF EXISTS {table_name}{cascade_clause}"
+                        cur.execute(drop_query)
+                        conn.commit()
+                        return f"✅ Table '{table_name}' dropped successfully"
+                    else:
+                        return f"❌ Table '{table_name}' is a system table and cannot be dropped"
+            except Exception as e:
+                conn.rollback()
+                return f"❌ Error dropping table: {str(e)}"
+            finally:
+                conn.close()
+        except Exception as e:
+            return f"❌ Connection error: {str(e)}"

@@ -102,7 +102,16 @@ def get_list_of_column_in_table(schema, table):
     return db_interface.list_columns_in_table(schema, table)
 
 def run_read_only_query(query: str):
+    """Run a read only query"""
     return db_interface.read_only_query(query)
+
+def create_table_from_query(table_name: str, source_query: str):
+    """Create a permanent table from a query"""
+    return db_interface.create_table_from_query(table_name, source_query)
+
+def drop_table(table_name: str):
+    """Drop a table"""
+    return db_interface.drop_table(table_name)
 
 def create_sample_image():
     img_path = "./sample_graph.png"
@@ -110,6 +119,10 @@ def create_sample_image():
         img = Image.new("RGB", (300, 150), color="lightgreen")
         img.save(img_path)
     return img_path
+
+def serve_image_from_path():
+    """Serve the sample image"""
+    return create_sample_image()
 
 def do_annova(table_name, min_sample_size=0):
     '''
@@ -276,41 +289,215 @@ with gr.Blocks(title="Database Operations") as tab1:
             schema_input = gr.Textbox(label="Schema Name", placeholder="public")
             table_input = gr.Textbox(label="Table Name", placeholder="customers")
             column_btn = gr.Button("Get Columns")
+            
+            gr.Markdown("### 🔍 SQL Query")
+            query_input = gr.Textbox(label="SQL Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
+            query_btn = gr.Button("Execute Query", variant="primary")
 
-            gr.Markdown("### Enter a read-only query")
-            query_input = gr.Textbox(label="read-only query")
-            query_btn = gr.Button("Get Columns")
+            gr.Markdown("### 🔍 Create Table")
+            table_name_input = gr.Textbox(label="Table Name", placeholder="table")
+            source_query_input = gr.Textbox(label="Source Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
+            create_table_from_query_btn = gr.Button("Create Table", variant="primary")
 
-            gr.Markdown("### enter a dict that comply to annova function")
-            annova_input = gr.Textbox(label="annova")
-            annova_min_sample_input = gr.Textbox(label="min sample size for annova")
-            annova_btn = gr.Button("run annova")
-
-            gr.Markdown("### enter a dict that comply to tukey function")
-            tukey_input = gr.Textbox(label="tukey")
-            tukey_min_sample_input = gr.Textbox(label="min sample size for tukey")
-            tukey_btn = gr.Button("run tukey")
-
-
+            gr.Markdown("### 🔍 Drop Table")
+            drop_table_name_input = gr.Textbox(label="Table Name", placeholder="table")
+            drop_table_btn = gr.Button("Drop Table", variant="primary")
+            
+            gr.Markdown("### 🎨 Sample Visualization")
+            generate_sample_btn = gr.Button("Generate Sample", variant="secondary")
+            
         with gr.Column(scale=2):
-            schema_info = gr.Textbox(label="Discover DB Output")
-            db_info = gr.Textbox(label="Query DB Output")
-            table_in_schema = gr.Textbox(label="what table are in the selected schema")
-            column_output = gr.Textbox(label="Table Columns Output")
-            query_output = gr.Textbox(label="your query output")
-            annova_output = gr.Textbox(label="annova output")
-            tukey_output = gr.Textbox(label="tukey output")
-
-    # FIXED: Proper function bindings with correct inputs/outputs
+            schema_info = gr.Textbox(label="📋 Schema Information", lines=5)
+            db_info = gr.Textbox(label="ℹ️ Database Information", lines=5)
+            table_in_schema = gr.Textbox(label="📊 Tables in Schema", lines=5)
+            column_output = gr.Textbox(label="📄 Table Columns", lines=5)
+            query_output = gr.Textbox(label="🔍 Query Results", lines=8)
+            table_status = gr.Textbox(label="table status")
+            drop_table_status = gr.Textbox(label="drop table status")
+            output_image = gr.Image(label="🎨 Generated Visualization", type="filepath")
     
-    # Database operations
+    # Event handlers for Tab 1
     discover_btn.click(get_schemas, outputs=schema_info)
     database_info_btn.click(get_db_infos, outputs=db_info)
     table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
     column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
     query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
+    generate_sample_btn.click(serve_image_from_path, outputs=output_image)
+    create_table_from_query_btn.click(create_table_from_query, inputs=[table_name_input, source_query_input], outputs=table_status)
+    drop_table_btn.click(drop_table, inputs=drop_table_name_input, outputs=drop_table_status)
+
+# TAB 2: API Operations
+with gr.Blocks(title="AI Analytics") as tab2:
+    gr.Markdown("# 🤖 AI-Powered Analytics")
+    gr.Markdown("*Generate code, create visualizations, and manage files with AI*")
+    
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("### 🤖 AI Code Generation")
+            code_request_input = gr.Textbox(
+                label="Analysis Request", 
+                lines=3,
+                placeholder="Analyze customer purchase patterns..."
+            )
+            generate_code_btn = gr.Button("🧠 Generate Code", variant="primary")
+            
+            gr.Markdown("### 📈 Graph Generation")
+            graph_type_input = gr.Textbox(label="Graph Type", placeholder="bar, line, pie, scatter")
+            data_dict_input = gr.Textbox(
+                label="Data (JSON format)", 
+                lines=3,
+                placeholder='{"labels": ["A", "B", "C"], "values": [1, 2, 3]}'
+            )
+            generate_graph_btn = gr.Button("📊 Generate Graph", variant="primary")
+            
+            gr.Markdown("### 📁 File Download")
+            file_path_input = gr.Textbox(label="File Path", placeholder="path/to/file.csv")
+            download_btn = gr.Button("📥 Download File", variant="secondary")
+            
+        with gr.Column(scale=2):
+            code_output = gr.Textbox(label="🤖 AI Generated Code/Analysis", lines=10)
+            code_status = gr.Textbox(label="Code Status", lines=2)
+            graph_output = gr.Image(label="📈 Generated Graph", type="filepath")
+            graph_status = gr.Textbox(label="Graph Status", lines=2)
+            download_status = gr.Textbox(label="📁 Download Status", lines=3)
+    
+    # Event handlers for Tab 2
+    generate_code_btn.click(
+        generate_code_wrapper, 
+        inputs=code_request_input, 
+        outputs=[code_output, code_status]
+    )
+    generate_graph_btn.click(
+        generate_graph_wrapper, 
+        inputs=[graph_type_input, data_dict_input], 
+        outputs=[graph_output, graph_status]
+    )
+    download_btn.click(
+        download_file_wrapper, 
+        inputs=file_path_input, 
+        outputs=download_status
+    )
+
+# TAB 3: View Management
+with gr.Blocks(title="View Management") as tab3:
+    gr.Markdown("# 🗄️ View Management Center")
+    gr.Markdown("*Create, manage, and explore database views*")
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("### 📊 Analytics Views Management")
+            create_analytics_btn = gr.Button("📈 Create All Analytics Views", variant="primary", size="lg")
+        with gr.Column(scale=2):
+            views_creation_output = gr.Textbox(
+                label="📈 Views Creation Status", 
+                lines=5,
+                info="Status of analytics views creation"
+            )
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("### 📋 View Browser")
+            refresh_views_btn = gr.Button("🔄 Refresh View List", variant="secondary")
+        with gr.Column(scale=2):
+                views_list_output = gr.Textbox(
+                label="📋 Available Views", 
+                lines=10,
+                info="List of all database views"
+            )
+                
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("### 🔍 View Content Explorer")
+            view_name_input = gr.Textbox(
+                label="View Name", 
+                placeholder="customer_avg_age_by_article_group",
+                info="Enter exact view name"
+            )
+            content_limit_input = gr.Textbox(
+                label="Row Limit", 
+                value="10",
+                info="Number of rows to display (1-1000)"
+            )
+            view_content_btn = gr.Button("👁️ Show View Content", variant="secondary")
+        with gr.Column(scale=2):
+                view_content_output = gr.Textbox(
+                label="🔍 View Content", 
+                lines=10,
+                info="Sample data from selected view"
+            )
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("### 🗑️ View Management")
+            delete_view_name = gr.Textbox(label="View Name to Delete", placeholder="view_to_delete")
+            delete_view_btn = gr.Button("🗑️ Delete View", variant="stop")
+        with gr.Column(scale=2):
+            delete_status_output = gr.Textbox(
+                label="🗑️ Deletion Status", 
+                lines=2,
+                info="View deletion results"
+            )
+    
+    # Event handlers for Tab 3
+    create_analytics_btn.click(
+        create_analytics_views_from_file, 
+        outputs=views_creation_output
+    )
+
+    refresh_views_btn.click(
+        get_all_views,
+        outputs=views_list_output
+    )
+
+    view_content_btn.click(
+        get_view_content_sample,
+        inputs=[view_name_input, content_limit_input],
+        outputs=view_content_output
+    )
+
+    delete_view_btn.click(
+        delete_view,
+        inputs=delete_view_name,
+        outputs=delete_status_output
+    )
+
+    # Auto-refresh views list when this tab loads
+    tab3.load(get_all_views, outputs=views_list_output)
+
+# TAB 4: Statistical Analysis
+    with gr.Blocks(title="Statistical Analysis") as tab4:
+        gr.Markdown("# 📊 Statistical Analysis")
+        gr.Markdown("*Run statistical tests on your data*")
+
+        with gr.Row():
+            with gr.Column(scale=1):
+                gr.Markdown("### enter a dict that comply to annova function")
+                annova_input = gr.Textbox(label="annova")
+                annova_min_sample_input = gr.Textbox(label="min sample size for annova")
+                annova_btn = gr.Button("run annova")
+
+                gr.Markdown("### enter a dict that comply to tukey function")
+                tukey_input = gr.Textbox(label="tukey")
+                tukey_min_sample_input = gr.Textbox(label="min sample size for tukey")
+                tukey_btn = gr.Button("run tukey")
+
+
+            with gr.Column(scale=2):
+                annova_output = gr.Textbox(label="annova output")
+                tukey_output = gr.Textbox(label="tukey output")
+
+    # FIXED: Proper function bindings with correct inputs/outputs
+    
+    # Database operations
     annova_btn.click(do_annova, inputs=[annova_input, annova_min_sample_input], outputs=annova_output)
     tukey_btn.click(do_tukey_test, inputs=[tukey_input, tukey_min_sample_input], outputs=tukey_output)
+
+# Create the TabbedInterface
+interface = gr.TabbedInterface(
+    [tab1, tab2, tab3, tab4], 
+    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 View Management", "📊 Statistical Analysis"],
+    title="E-commerce Database Analytics Platform",
+    theme=gr.themes.Soft()
+)
 
 # Launch the app
 if __name__ == "__main__":

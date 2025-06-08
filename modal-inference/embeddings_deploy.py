@@ -1,100 +1,59 @@
 # ---
-# cmd: ["modal", "run", "06_gpu_and_ml/embeddings/text_embeddings_inference.py::embed_dataset"]
+# cmd: ["modal", "run", "embeddings_deploy.py::fastapi_app"]
 # ---
 
-# # Run TextEmbeddingsInference (TEI) on Modal
+# # Run SentenceTransformers Embeddings on Modal
 
-# This example runs the [Text Embedding Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) toolkit on the Hacker News BigQuery public dataset.
+# This example runs SentenceTransformers for text embeddings on Modal.
 
 import json
 import os
-import socket
-import subprocess
 from pathlib import Path
+from typing import List, Optional
 
 import modal
 
 GPU_CONFIG = "A10G"
-MODEL_ID = "BAAI/bge-base-en-v1.5"
-DOCKER_IMAGE = (
-    "ghcr.io/huggingface/text-embeddings-inference:86-0.4.0"  # Ampere 86 for A10s.
-    # "ghcr.io/huggingface/text-embeddings-inference:0.4.0" # Ampere 80 for A100s.
-    # "ghcr.io/huggingface/text-embeddings-inference:0.3.0"  # Turing for T4s.
-)
-
-DATA_PATH = Path("/data/dataset.jsonl")
-
-LAUNCH_FLAGS = [
-    "--model-id",
-    MODEL_ID,
-    "--port",
-    "8000",
-]
-
-
-def spawn_server() -> subprocess.Popen:
-    process = subprocess.Popen(["text-embeddings-router"] + LAUNCH_FLAGS)
-
-    # Poll until webserver at 127.0.0.1:8000 accepts connections before running inputs.
-    while True:
-        try:
-            socket.create_connection(("127.0.0.1", 8000), timeout=1).close()
-            print("Webserver ready!")
-            return process
-        except (socket.timeout, ConnectionRefusedError):
-            # Check if launcher webserving process has exited.
-            # If so, a connection can never be made.
-            retcode = process.poll()
-            if retcode is not None:
-                raise RuntimeError(f"launcher exited unexpectedly with code {retcode}")
-
-
-def download_model():
-    # Wait for server to start. This downloads the model weights when not present.
-    spawn_server().terminate()
-
+MODEL_ID = "sentence-transformers/clip-ViT-L-14"
 
 app = modal.App("embeddings-api")
 
-tei_image = (
-    modal.Image.from_registry(
-        DOCKER_IMAGE,
-        add_python="3.10",
-    )
-    .dockerfile_commands("ENTRYPOINT []")
+# Create image with SentenceTransformers
+def download_model():
+    from sentence_transformers import SentenceTransformer
+    # Download and cache the model
+    model = SentenceTransformer(MODEL_ID)
+    print(f"Model {MODEL_ID} downloaded successfully")
+
+embeddings_image = (
+    modal.Image.debian_slim(python_version="3.10")
+    .pip_install("sentence-transformers", "fastapi[standard]", "torch", "numpy", "pillow", "requests")
     .run_function(download_model, gpu=GPU_CONFIG)
-    .pip_install("httpx", "fastapi[standard]", "numpy")
 )
-
-# Global variable to hold the TEI client
-tei_client = None
-
 
 @app.function(
     gpu=GPU_CONFIG,
-    image=tei_image,
+    image=embeddings_image,
     max_containers=4,
 )
 @modal.concurrent(max_inputs=100)
 @modal.asgi_app()
 def fastapi_app():
-    import asyncio
     import numpy as np
     from fastapi import FastAPI, HTTPException
-    from httpx import AsyncClient
     from pydantic import BaseModel
-    from typing import List, Union, Optional
-    from concurrent.futures import ThreadPoolExecutor
+    from sentence_transformers import SentenceTransformer
+    from typing import List, Optional, Union
+    import base64
+    import io
+    from PIL import Image
+    import requests
 
-    executor = ThreadPoolExecutor()
     web_app = FastAPI()
 
-    global tei_client
-    if tei_client is None:
-        # Start TEI server
-        process = spawn_server()
-        tei_client = AsyncClient(base_url="http://127.0.0.1:8000")
-
+    # Load the model once when the container starts
+    model = SentenceTransformer(MODEL_ID)
+    
     class EmbedRequest(BaseModel):
         texts: List[str]
 
@@ -110,6 +69,18 @@ def fastapi_app():
     class SimilarityResponse(BaseModel):
         similarity: float
 
+    class ModelInfoResponse(BaseModel):
+        model_id: str
+        vector_dimensions: int
+        max_sequence_length: Optional[int] = None
+
+    class EmbedImageRequest(BaseModel):
+        images: List[str]  # List of base64 encoded images or URLs
+        image_type: str = "base64"  # "base64" or "url"
+
+    class EmbedImageResponse(BaseModel):
+        embeddings: List[List[float]]
+
     def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
         """Calculate cosine similarity between two vectors"""
         vec1_np = np.array(vec1)
@@ -124,30 +95,102 @@ def fastapi_app():
 
         return float(dot_product / (norm1 * norm2))
 
+    def process_image(image_data: str, image_type: str) -> Image.Image:
+        """Process image from base64 or URL"""
+        if image_type == "base64":
+            # Remove data URL prefix if present
+            if image_data.startswith("data:image"):
+                image_data = image_data.split(",")[1]
+            
+            # Decode base64
+            image_bytes = base64.b64decode(image_data)
+            image = Image.open(io.BytesIO(image_bytes))
+        elif image_type == "url":
+            # Download image from URL
+            response = requests.get(image_data, timeout=10)
+            response.raise_for_status()
+            image = Image.open(io.BytesIO(response.content))
+        else:
+            raise ValueError(f"Unsupported image_type: {image_type}")
+        
+        # Convert to RGB if needed
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+            
+        return image
+
     @web_app.get("/health")
     async def health_check():
-        """Health check endpoint"""
+        """
+        Health check endpoint
+        
+        No request body required.
+        
+        Returns:
+            - status: "ok" | "error"
+            - model: str (model ID)
+            - dimensions: int (vector dimensions)
+        """
         try:
-            # Test if TEI server is responsive
-            resp = await tei_client.get("/health")
-            if resp.status_code == 200:
-                return {"status": "ok", "model": MODEL_ID}
-            else:
-                return {"status": "degraded", "model": MODEL_ID}
+            # Test model with a simple embedding
+            test_embedding = model.encode(["test"])
+            return {"status": "ok", "model": MODEL_ID, "dimensions": len(test_embedding[0])}
         except Exception as e:
             return {"status": "error", "error": str(e)}
+
+    @web_app.get("/info", response_model=ModelInfoResponse)
+    async def get_model_info():
+        """
+        Get model information including vector dimensions
+        
+        No request body required.
+        
+        Returns:
+            - model_id: str
+            - vector_dimensions: int
+            - max_sequence_length: int | null
+        """
+        try:
+            # Get dimensions by encoding a test sentence
+            test_embedding = model.encode(["test"])
+            vector_dimensions = len(test_embedding[0])
+            
+            # Get max sequence length from model config if available
+            max_length = getattr(model.tokenizer, 'model_max_length', None)
+            if max_length and max_length > 100000:  # Some models return very large numbers
+                max_length = 512  # Reasonable default
+            
+            return ModelInfoResponse(
+                model_id=MODEL_ID,
+                vector_dimensions=vector_dimensions,
+                max_sequence_length=max_length
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to get model info: {str(e)}")
 
     @web_app.post("/embed", response_model=EmbedResponse)
     async def embed_texts(request: EmbedRequest):
         """
         Generate embeddings for the provided texts
+        
+        Request body:
+        {
+            "texts": ["string1", "string2", ...]  // Array of strings to embed
+        }
+        
+        Returns:
+        {
+            "embeddings": [[float, float, ...], [float, float, ...], ...]  // Array of embedding vectors
+        }
         """
         try:
-            resp = await tei_client.post("/embed", json={"inputs": request.texts})
-            resp.raise_for_status()
-            embeddings = resp.json()
+            # Generate embeddings using SentenceTransformers
+            embeddings = model.encode(request.texts)
+            
+            # Convert numpy arrays to lists
+            embeddings_list = [embedding.tolist() for embedding in embeddings]
 
-            return EmbedResponse(embeddings=embeddings)
+            return EmbedResponse(embeddings=embeddings_list)
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to generate embeddings: {str(e)}")
@@ -156,19 +199,30 @@ def fastapi_app():
     async def calculate_similarity(request: SimilarityRequest):
         """
         Calculate cosine similarity between two texts or vectors
+        
+        Request body (Option 1 - Compare two texts):
+        {
+            "text1": "first text to compare",
+            "text2": "second text to compare"
+        }
+        
+        Request body (Option 2 - Compare two vectors):
+        {
+            "vector1": [float, float, ...],  // First embedding vector
+            "vector2": [float, float, ...]   // Second embedding vector (same dimension)
+        }
+        
+        Returns:
+        {
+            "similarity": float  // Cosine similarity score between -1 and 1
+        }
         """
         try:
             # Case 1: Both texts provided
             if request.text1 is not None and request.text2 is not None:
                 # Get embeddings for both texts
-                resp = await tei_client.post("/embed", json={"inputs": [request.text1, request.text2]})
-                resp.raise_for_status()
-                embeddings = resp.json()
-
-                if len(embeddings) != 2:
-                    raise HTTPException(status_code=500, detail="Failed to get embeddings for both texts")
-
-                vector1, vector2 = embeddings[0], embeddings[1]
+                embeddings = model.encode([request.text1, request.text2])
+                vector1, vector2 = embeddings[0].tolist(), embeddings[1].tolist()
 
             # Case 2: Both vectors provided
             elif request.vector1 is not None and request.vector2 is not None:
@@ -193,6 +247,46 @@ def fastapi_app():
             raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to calculate similarity: {str(e)}")
+
+    @web_app.post("/embedImage", response_model=EmbedImageResponse)
+    async def embed_images(request: EmbedImageRequest):
+        """
+        Generate embeddings for the provided images
+        
+        Request body (Option 1 - Base64 encoded images):
+        {
+            "images": ["data:image/jpeg;base64,/9j/4AAQ...", "base64string2", ...],
+            "image_type": "base64"
+        }
+        
+        Request body (Option 2 - Image URLs):
+        {
+            "images": ["https://example.com/image1.jpg", "https://example.com/image2.png", ...],
+            "image_type": "url"
+        }
+        
+        Returns:
+        {
+            "embeddings": [[float, float, ...], [float, float, ...], ...]  // Array of image embedding vectors
+        }
+        """
+        try:
+            # Process images
+            processed_images = []
+            for image_data in request.images:
+                image = process_image(image_data, request.image_type)
+                processed_images.append(image)
+            
+            # Generate embeddings using SentenceTransformers CLIP model
+            embeddings = model.encode(processed_images)
+            
+            # Convert numpy arrays to lists
+            embeddings_list = [embedding.tolist() for embedding in embeddings]
+
+            return EmbedImageResponse(embeddings=embeddings_list)
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to generate image embeddings: {str(e)}")
 
     return web_app
 
