@@ -90,27 +90,57 @@ db_interface = DatabaseInterface()
 
 # All function definitions (keeping your existing ones)
 def get_schemas():
+    """### `get_schemas()`
+            - **Purpose**: Retrieve all database schemas
+            - **Returns**: JSON object containing schema information
+            - **Use Case**: Initial database exploration"""
     return db_interface.list_schemas()
 
 def get_db_infos():
+    """### `get_db_infos()`
+            - **Purpose**: Get comprehensive database information and metadata
+            - **Returns**: JSON object containing database information
+            - **Use Case**: Initial database exploration"""
     return db_interface.list_database_info()
 
 def get_list_of_tables_in_schema(schema):
+    """### `get_list_of_tables_in_schema(schema_name: str)`
+            - **Purpose**: List all tables within a specific schema
+            - **Parameters**: `schema_name` - Name of the schema to explore
+            - **Returns**: JSON object containing table information
+            - **Use Case**: Initial database exploration"""
     return db_interface.list_tables_in_schema(schema)
 
 def get_list_of_column_in_table(schema, table):
+    """### `get_list_of_column_in_table(schema_name: str, table_name: str)`
+            - **Purpose**: Get detailed column information for a specific table
+            - **Parameters**: `schema_name` - Name of the schema containing the table
+            - **Returns**: JSON object containing column information
+            - **Use Case**: Initial database exploration"""
     return db_interface.list_columns_in_table(schema, table)
 
 def run_read_only_query(query: str):
-    """Run a read only query"""
+    """### `run_read_only_query(query: str)`
+            - **Purpose**: Execute read-only SQL queries safely
+            - **Parameters**: `query` - SQL SELECT statement
+            - **Returns**: Query results as rows
+            - **Use Case**: Initial database exploration"""
     return db_interface.read_only_query(query)
 
 def create_table_from_query(table_name: str, source_query: str):
-    """Create a permanent table from a query"""
+    """### `create_table_from_query(table_name: str, source_query: str)`
+            - **Purpose**: Create permanent tables from SELECT queries
+            - **Parameters**: `table_name` - Name of the new table
+            - **Returns**: Status message indicating success or failure
+            - **Use Case**: Create analysis datasets from queries"""
     return db_interface.create_table_from_query(table_name, source_query)
 
 def drop_table(table_name: str):
-    """Drop a table"""
+    """### `drop_table(table_name: str)`
+            - **Purpose**: Remove tables from the database
+            - **Parameters**: `table_name` - Name of the table to drop
+            - **Returns**: Status message indicating success or failure
+            - **Use Case**: Clean up analysis tables"""
     return db_interface.drop_table(table_name)
 
 def create_sample_image():
@@ -182,6 +212,11 @@ def do_tukey_test(table_name, min_sample_size=0):
     return var_stats.tukey_test(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
 
 def generate_code_wrapper(user_request: str):
+    """### `generate_code_wrapper(user_request: str)`
+            - **Purpose**: Generate Python code based on user request
+            - **Parameters**: `user_request` - Textual description of the analysis
+            - **Returns**: Generated code and status message
+            - **Use Case**: AI-powered code generation for data analysis"""
     if not user_request.strip():
         return "❌ Please provide a request", ""
     
@@ -189,6 +224,11 @@ def generate_code_wrapper(user_request: str):
     return output or "No output generated", status
 
 def generate_graph_wrapper(graph_type: str, data_json: str):
+    """### `generate_graph_wrapper(graph_type: str, data_json: str)`
+            - **Purpose**: Create visualizations using matplotlib
+            - **Parameters**: `graph_type` - Type of chart (bar, line, pie, scatter)
+            - **Returns**: Image file path and status
+            - **Use Case**: Creating charts and graphs for presentations"""
     try:
         if not graph_type.strip() or not data_json.strip():
             return None, "❌ Please provide both graph type and data"
@@ -203,72 +243,71 @@ def generate_graph_wrapper(graph_type: str, data_json: str):
         return None, f"❌ Error: {str(e)}"
 
 def download_file_wrapper(file_path: str):
+    """### `download_file_wrapper(file_path: str)`
+            - **Purpose**: Download files from the service
+            - **Use Case**: Retrieving generated reports or datasets"""
     if not file_path.strip():
         return "❌ Please provide a file path"
     
     local_path, status = api_service.download_file(file_path)
     return status
 
-def create_analytics_views_from_file():
-    try:
-        result = db_interface.create_analytics_views()
-        return result
-    except Exception as e:
-        return f"❌ Error creating views: {str(e)}"
+# def create_analytics_views_from_file():
+#     """### `create_analytics_views_from_file()`
+#             - **Purpose**: Create predefined analytics views from SQL file
+#             - **Returns**: Status of view creation process
+#             - **Use Case**: Setting up standard business intelligence views"""
+#     try:
+#         result = db_interface.create_analytics_views()
+#         return result
+#     except Exception as e:
+#         return f"❌ Error creating views: {str(e)}"
 
-# def execute_custom_sql_file(file_path: str):
-#     if not file_path.strip():
-#         return "❌ Please provide a file path"
-#     return db_interface.execute_sql_file(file_path)
-
-# def create_individual_view(view_name: str, view_query: str):
-#     return db_interface.create_view(view_name, view_query)
-
-def get_all_views():
-    try:
-        views = db_interface.list_views_detailed()
-        if not views:
-            return "No views found in database"
+# def get_all_views():
+#     try:
+#         views = db_interface.list_views_detailed()
+#         if not views:
+#             return "No views found in database"
         
-        result = []
-        for view in views:
-            schema, name, owner, definition = view
-            short_def = (definition[:100] + "...") if len(definition) > 100 else definition
-            result.append(f"📋 {schema}.{name} (Owner: {owner})\n   {short_def}\n")
+#         result = []
+#         for view in views:
+#             schema, name, owner, definition = view
+#             short_def = (definition[:100] + "...") if len(definition) > 100 else definition
+#             result.append(f"📋 {schema}.{name} (Owner: {owner})\n   {short_def}\n")
         
-        return "\n".join(result)
-    except Exception as e:
-        return f"❌ Error listing views: {str(e)}"
+#         return "\n".join(result)
+#     except Exception as e:
+#         return f"❌ Error listing views: {str(e)}"
 
-def get_view_content_sample(view_name: str, limit_str: str = "10"):
-    if not view_name.strip():
-        return "❌ Please provide a view name"
+# def get_view_content_sample(view_name: str, limit_str: str = "10"):
+#     if not view_name.strip():
+#         return "❌ Please provide a view name"
     
-    try:
-        limit = int(limit_str) if limit_str.strip() else 10
-        limit = min(max(limit, 1), 1000)
+#     try:
+#         limit = int(limit_str) if limit_str.strip() else 10
+#         limit = min(max(limit, 1), 1000)
         
-        content = db_interface.get_view_content(view_name, limit)
-        if isinstance(content, str):
-            return content
+#         content = db_interface.get_view_content(view_name, limit)
+#         if isinstance(content, str):
+#             return content
         
-        if not content:
-            return f"View '{view_name}' exists but contains no data"
+#         if not content:
+#             return f"View '{view_name}' exists but contains no data"
         
-        result = [f"📊 Sample data from view '{view_name}' (showing {len(content)} rows):\n"]
-        for i, row in enumerate(content[:limit], 1):
-            result.append(f"Row {i}: {row}")
+#         result = [f"📊 Sample data from view '{view_name}' (showing {len(content)} rows):\n"]
+#         for i, row in enumerate(content[:limit], 1):
+#             result.append(f"Row {i}: {row}")
         
-        return "\n".join(result)
-    except ValueError:
-        return "❌ Invalid limit value - please enter a number"
-    except Exception as e:
-        return f"❌ Error getting view content: {str(e)}"
+#         return "\n".join(result)
+#     except ValueError:
+#         return "❌ Invalid limit value - please enter a number"
+#     except Exception as e:
+#         return f"❌ Error getting view content: {str(e)}"
 
-def delete_view(view_name: str):
-    if not view_name.strip():
-        return "❌ Please provide a view name"
-    return db_interface.drop_view(view_name)
+# def delete_view(view_name: str):
+#     if not view_name.strip():
+#         return "❌ Please provide a view name"
+#     return db_interface.drop_view(view_name)
 
 # TAB 1: Database Operations
 with gr.Blocks(title="Database Operations") as tab1:
@@ -491,10 +530,83 @@ with gr.Blocks(title="View Management") as tab3:
     annova_btn.click(do_annova, inputs=[annova_input, annova_min_sample_input], outputs=annova_output)
     tukey_btn.click(do_tukey_test, inputs=[tukey_input, tukey_min_sample_input], outputs=tukey_output)
 
+    # TAB 5: MCP guidelines
+    with gr.Blocks(title="MCP Guidelines") as tab5:
+        gr.Markdown("# 📚 MCP Client Guidelines")
+        gr.Markdown("*Complete documentation for MCP clients using this analytics server*")
+    with gr.Column():
+        gr.Markdown("""
+            ## Purpose
+            This MCP server provides comprehensive e-commerce database analytics capabilities, enabling clients to explore database schemas, run queries, create views, perform statistical analysis, and generate AI-powered insights. The server is designed to help users analyze customer behavior, sales patterns, and business metrics from e-commerce data.
+
+            ## 📊 Database Schema & Discovery Functions
+            ### `get_schemas()`**Purpose**: Retrieve all database schemas
+            ### `get_db_infos()` **Purpose**: Get comprehensive database information and metadata
+            ### `get_list_of_tables_in_schema(schema_name: str)` **Purpose**: List all tables within a specific schema
+            ### `get_list_of_column_in_table(schema_name: str, table_name: str)` **Purpose**: Get detailed column information for a specific table
+
+            ## 🔍 Query & Data Manipulation Functions
+            ### `run_read_only_query(query: str)` **Purpose**: Execute read-only SQL queries safely
+            ### `create_table_from_query(table_name: str, source_query: str)` **Purpose**: Create permanent tables from SELECT queries
+            ### `drop_table(table_name: str)` **Purpose**: Remove tables from the database- **Use Case**: Cleaning up temporary analysis tables
+
+            ## 📈 Statistical Analysis Functions
+            ### `do_annova(table_name: str, min_sample_size: int = 0)` **Purpose**: Perform ANOVA (Analysis of Variance) statistical test- **Use Case**: Testing if there are significant differences between group means
+            ### `do_tukey_test(table_name: str, min_sample_size: int = 0)` **Purpose**: Perform Tukey's HSD post-hoc analysis after ANOVA **Use Case**: Identifying which specific groups differ significantly **Prerequisite**: Should be used after significant ANOVA results
+
+            ## 🤖 AI-Powered Analytics Functions
+            ### `generate_code_wrapper(user_request: str)`- **Purpose**: Generate and execute Python code using AI based on natural language requests
+            ### `generate_graph_wrapper(graph_type: str, data_json: str)`- **Purpose**: Create visualizations using matplotlib **Use Case**: Creating charts and graphs for presentations- **Example**: `{"labels": ["Q1", "Q2", "Q3"], "values": [100, 150, 200]}`
+            ### `download_file_wrapper(file_path: str)`- **Purpose**: Download files from the analytics service
+
+            ## 🔄 Recommended Workflows
+
+            ### 1. Discovery Workflow
+            get_schemas() → Discover available schemas
+            get_list_of_tables_in_schema("public") → Find tables
+            get_list_of_column_in_table("public", "customers") → Understand structure
+            run_read_only_query("SELECT * FROM customers LIMIT 5") → Sample data
+
+            ### 2. Analysis Workflow
+            run_read_only_query() → Explore data
+            create_table_from_query() → Create analysis datasets
+            do_annova() → Statistical testing
+            do_tukey_test() → Post-hoc analysis
+            generate_graph_wrapper() → Visualize results
+                    
+            ### 3. View Management Workflow
+            create_analytics_views_from_file() → Setup standard views
+            get_all_views() → Discover available views
+            get_view_content_sample() → Preview view data
+            Use views in queries for analysis
+            
+            ### 4. AI-Assisted Analysis
+            generate_code_wrapper("Analyze customer segments") → Get AI insights
+            Use results to guide further manual analysis
+            generate_graph_wrapper() → Visualize AI findings
+                                 
+            ## ✅ Best Practices for MCP Clients
+            1. **Start with Discovery**: Always begin by exploring schemas and tables before analysis
+            2. **Use Read-Only Queries**: Prefer `run_read_only_query()` for exploration to maintain data safety
+            3. **Leverage Views**: Use `get_all_views()` to find pre-built analytics before creating custom queries
+            4. **Statistical Validation**: Use `do_annova()` before `do_tukey_test()` for proper statistical workflow
+            5. **AI Enhancement**: Use `generate_code_wrapper()` for complex analysis that would be difficult to code manually
+            6. **Clean Up**: Use `drop_table()` to remove temporary analysis tables when done
+            7. **Error Handling**: All functions return status indicators - check for errors before proceeding
+            8. **Data Safety**: Core tables (transactions, customers, articles) are protected from modification
+
+            ## 🎯 Use Cases
+            This MCP server is designed for:
+            - **E-commerce Analytics**: Customer behavior, sales patterns, product performance
+            - **Business Intelligence**: KPI tracking, trend analysis, forecasting
+            - **Statistical Research**: Hypothesis testing, comparative analysis
+            - **Data Exploration**: Schema discovery, data profiling, relationship analysis
+            - **AI-Assisted Insights**: Natural language to analysis, automated reporting""")
+
 # Create the TabbedInterface
 interface = gr.TabbedInterface(
-    [tab1, tab2, tab3, tab4], 
-    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 View Management", "📊 Statistical Analysis"],
+    [tab1, tab2, tab3, tab4, tab5], 
+    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 View Management", "📊 Statistical Analysis", "📊 MCP guidelines"],
     title="E-commerce Database Analytics Platform",
     theme=gr.themes.Soft()
 )
