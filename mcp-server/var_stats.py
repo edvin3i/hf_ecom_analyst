@@ -5,7 +5,7 @@ from collections import defaultdict
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 
-def anova(categories:dict, min_sample_size=0):
+def anova(db_connection: DatabaseInterface, table_name, min_sample_size=0):
 	'''
 		the function runs the annova on the dataset and render the associated F_score and p_value
 		categories is a dict that represent the population measures list for each categories. it has the following pattern:
@@ -20,6 +20,18 @@ def anova(categories:dict, min_sample_size=0):
 		min_sample_size is used to exclude categories that does not have enough measurement.
 		default = 0: all categories are selected
 	'''
+
+	query = f"SELECT * FROM {table_name};"
+
+	result = db_connection.read_only_query(query)
+	categories = defaultdict(list)
+
+	for product_type, age in result:
+		if age is not None:
+			if not isinstance(age, int):
+				age = int(age)
+			categories[product_type].append(age)
+
 	categories_filtered = {
 		k: v for k, v in categories.items() if len(v) > min_sample_size
 	}
@@ -32,7 +44,7 @@ def anova(categories:dict, min_sample_size=0):
 		"p-value": round(p_value, 3)
 	}
 
-def tukey_test(categories:dict, min_sample_size=0):
+def tukey_test(db_connection: DatabaseInterface, table_name, min_sample_size=0):
 	"""
 	this function runs a Tukey's HSD (Honestly Significant Difference) test — a post-hoc analysis following ANOVA. 
 	It tells you which specific pairs of groups differ significantly in their means
@@ -49,9 +61,21 @@ def tukey_test(categories:dict, min_sample_size=0):
 		default = 0: all categories are selected
 	"""
 	
+	query = f"SELECT * FROM {table_name};"
+
+	result = db_connection.read_only_query(query)
+	categories = defaultdict(list)
+
+	for product_type, age in result:
+		if age is not None:
+			if not isinstance(age, int):
+				age = int(age)
+			categories[product_type].append(age)
+
 	categories_filtered = {
 		k: v for k, v in categories.items() if len(v) > min_sample_size
 	}
+
 	flat_df = pd.DataFrame([
 		{'product_type_name': k, 'age': age}
 		for k, ages in categories_filtered.items()

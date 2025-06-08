@@ -133,17 +133,22 @@ def create_sample_image():
         img.save(img_path)
     return img_path
 
-def do_annova(groups, min_sample_size=0):
+def do_annova(table_name, min_sample_size=0):
     '''
 		this function runs the annova on the dataset and render the associated F_score and p_value
-		groups is a dict that represent the population measures list for each sub-groups. it has the following pattern:
-		groups = {
-			"type_1": [x_0, x_1, ..., x_n],
-			"type_2": [x_0, x_1, ..., x_n],
-			"type_3": [x_0, x_1, ..., x_n],
-			...,
-			"type_p": [x_0, x_1, ..., x_n],
-		}
+		table_name is the name of the table on which you want to run the ANOVA
+        the selected table MUST have the following signature:
+
+        groups | measurement
+
+        exemple with the product_type_age table:
+
+        type | age
+        ----------
+        'Coat', '36'
+        'Coat', '36'
+        'Hat/beanie', '32'
+        ...
 
 		min_sample_size is used to exclude categories that does not have enough measurement.
 		default = 0: all categories are selected
@@ -154,23 +159,26 @@ def do_annova(groups, min_sample_size=0):
             "p-value": round(p_value, 3)
         }
 	'''
-    data_dict = ast.literal_eval(groups)
+    return var_stats.anova(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
 
-    return var_stats.anova(categories=data_dict, min_sample_size=int(min_sample_size))
-
-def do_tukey_test(groups, min_sample_size=0):
+def do_tukey_test(table_name, min_sample_size=0):
     '''
 		this function runs a Tukey's HSD (Honestly Significant Difference) test — a post-hoc analysis following ANOVA. 
 	    It tells you which specific pairs of groups differ significantly in their means
         IT is meant to be used after you run a successful anova and you obtain sgnificant F-satatistics and p-value
-		categories is a dict that represent the population measures list for each categories. it has the following pattern:
-		categories = {
-			"type_1": [x_0, x_1, ..., x_n],
-			"type_2": [x_0, x_1, ..., x_n],
-			"type_3": [x_0, x_1, ..., x_n],
-			...,
-			"type_p": [x_0, x_1, ..., x_n],
-		}
+		table_name is the name of the table on which you want to run the ANOVA
+        the selected table MUST have the following signature:
+
+        groups | measurement
+
+        exemple with the product_type_age table:
+
+        type | age
+        ----------
+        'Coat', 36
+        'Coat', 36
+        'Hat/beanie', 32
+        ...
 
 		min_sample_size is used to exclude categories that does not have enough measurement.
 		default = 0: all categories are selected
@@ -180,9 +188,7 @@ def do_tukey_test(groups, min_sample_size=0):
         group1 | group2 | meandiff p-adj | lower | upper | reject (only true)
     
     '''
-
-    data_dict = ast.literal_eval(groups)
-    return var_stats.tukey_test(categories=data_dict, min_sample_size=int(min_sample_size))
+    return var_stats.tukey_test(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
 
 def generate_code_wrapper(user_request: str):
     """Wrapper for code generation"""
