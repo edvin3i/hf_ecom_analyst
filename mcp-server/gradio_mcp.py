@@ -708,17 +708,11 @@ with gr.Blocks(title="View Management") as tab3:
 	tsne_cluster_btn.click(do_tsne_embedding, inputs=tsne_cluster_input, outputs=tsne_output)
 	vector_centroid_btn.click(do_vector_centroid, inputs=vector_centroid_input, outputs=vector_centroid_output)
 
-    with gr.Blocks(title="AI Analytics") as tab5:
-        gr.Markdown("### 📚 Server Documentation")
-        instructions_btn = gr.Button("📖 Get MCP Instructions", variant="secondary")      
-        instructions_output = gr.Textbox(label="📚 MCP Server Instructions", lines=15)
-        instructions_btn.click(get_mcp_server_instructions, outputs=instructions_output)
-
-    with gr.Blocks(title="AI Analytics") as tab5:
-        gr.Markdown("### 📚 Server Documentation")
-        instructions_btn = gr.Button("📖 Get MCP Instructions", variant="secondary")      
-        instructions_output = gr.Textbox(label="📚 MCP Server Instructions", lines=15)
-        instructions_btn.click(get_mcp_server_instructions, outputs=instructions_output)
+	with gr.Blocks(title="MCP guidelines") as tab5:
+		gr.Markdown("### 📚 Server Documentation")
+		instructions_btn = gr.Button("📖 Get MCP Instructions", variant="secondary")      
+		instructions_output = gr.Textbox(label="📚 MCP Server Instructions", lines=15)
+		instructions_btn.click(get_mcp_server_instructions, outputs=instructions_output)
 
 # Create the TabbedInterface
 interface = gr.TabbedInterface(
