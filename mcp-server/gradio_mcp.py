@@ -1,6 +1,7 @@
 import ast
 import gradio as gr
 from db_work import DatabaseInterface
+from bigquery_work import BigQueryInterface
 import os
 from PIL import Image
 import var_stats
@@ -87,31 +88,53 @@ class API:
 # Initialize services
 api_service = API(BASE_URL)
 db_interface = DatabaseInterface()
+bq_interface = BigQueryInterface()
 
-# All function definitions (keeping your existing ones)
+# Global variable to track current data source
+current_data_source = "postgresql"  # Default to PostgreSQL
+
+def get_current_interface():
+    """Get the current database interface based on selection"""
+    return bq_interface if current_data_source == "bigquery" else db_interface
+
+def set_data_source(source: str):
+    """Set the current data source"""
+    global current_data_source
+    current_data_source = source
+    return f"✅ Data source switched to {source.upper()}"
+
+# Modified function definitions to use selected interface
 def get_schemas():
-    return db_interface.list_schemas()
+    return get_current_interface().list_schemas()
 
 def get_db_infos():
-    return db_interface.list_database_info()
+    return get_current_interface().list_database_info()
 
 def get_list_of_tables_in_schema(schema):
-    return db_interface.list_tables_in_schema(schema)
+    return get_current_interface().list_tables_in_schema(schema)
 
 def get_list_of_column_in_table(schema, table):
-    return db_interface.list_columns_in_table(schema, table)
+    return get_current_interface().list_columns_in_table(schema, table)
 
 def run_read_only_query(query: str):
     """Run a read only query"""
-    return db_interface.read_only_query(query)
+    return get_current_interface().read_only_query(query)
 
 def create_table_from_query(table_name: str, source_query: str):
     """Create a permanent table from a query"""
-    return db_interface.create_table_from_query(table_name, source_query)
+    interface = get_current_interface()
+    if hasattr(interface, 'create_table_from_query'):
+        return interface.create_table_from_query(table_name, source_query)
+    else:
+        return "❌ Table creation not supported for BigQuery interface"
 
 def drop_table(table_name: str):
     """Drop a table"""
-    return db_interface.drop_table(table_name)
+    interface = get_current_interface()
+    if hasattr(interface, 'drop_table'):
+        return interface.drop_table(table_name)
+    else:
+        return "❌ Table dropping not supported for BigQuery interface"
 
 def create_sample_image():
     img_path = "./sample_graph.png"
@@ -150,7 +173,7 @@ def do_annova(table_name, min_sample_size=0):
             "p-value": round(p_value, 3)
         }
 	'''
-    return var_stats.anova(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
+    return var_stats.anova(get_current_interface(), table_name=table_name, min_sample_size=int(min_sample_size))
 
 def do_tukey_test(table_name, min_sample_size=0):
     '''
@@ -179,7 +202,7 @@ def do_tukey_test(table_name, min_sample_size=0):
         group1 | group2 | meandiff p-adj | lower | upper | reject (only true)
     
     '''
-    return var_stats.tukey_test(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
+    return var_stats.tukey_test(get_current_interface(), table_name=table_name, min_sample_size=int(min_sample_size))
 
 def generate_code_wrapper(user_request: str):
     if not user_request.strip():
@@ -211,30 +234,30 @@ def download_file_wrapper(file_path: str):
 
 def create_analytics_views_from_file():
     try:
-        result = db_interface.create_analytics_views()
+        result = get_current_interface().create_analytics_views()
         return result
     except Exception as e:
         return f"❌ Error creating views: {str(e)}"
 
-# def execute_custom_sql_file(file_path: str):
-#     if not file_path.strip():
-#         return "❌ Please provide a file path"
-#     return db_interface.execute_sql_file(file_path)
-
-# def create_individual_view(view_name: str, view_query: str):
-#     return db_interface.create_view(view_name, view_query)
-
 def get_all_views():
     try:
-        views = db_interface.list_views_detailed()
+        views = get_current_interface().list_views_detailed()
         if not views:
             return "No views found in database"
         
         result = []
-        for view in views:
-            schema, name, owner, definition = view
-            short_def = (definition[:100] + "...") if len(definition) > 100 else definition
-            result.append(f"📋 {schema}.{name} (Owner: {owner})\n   {short_def}\n")
+        if current_data_source == "postgresql":
+            for view in views:
+                schema, name, owner, definition = view
+                short_def = (definition[:100] + "...") if len(definition) > 100 else definition
+                result.append(f"📋 {schema}.{name} (Owner: {owner})\n   {short_def}\n")
+        else:  # BigQuery
+            # Handle BigQuery response format
+            if isinstance(views, dict) and 'rows' in views:
+                for row in views['rows']:
+                    schema, name, definition = row
+                    short_def = (definition[:100] + "...") if len(definition) > 100 else definition
+                    result.append(f"📋 {schema}.{name}\n   {short_def}\n")
         
         return "\n".join(result)
     except Exception as e:
@@ -248,7 +271,7 @@ def get_view_content_sample(view_name: str, limit_str: str = "10"):
         limit = int(limit_str) if limit_str.strip() else 10
         limit = min(max(limit, 1), 1000)
         
-        content = db_interface.get_view_content(view_name, limit)
+        content = get_current_interface().get_view_content(view_name, limit)
         if isinstance(content, str):
             return content
         
@@ -256,8 +279,14 @@ def get_view_content_sample(view_name: str, limit_str: str = "10"):
             return f"View '{view_name}' exists but contains no data"
         
         result = [f"📊 Sample data from view '{view_name}' (showing {len(content)} rows):\n"]
-        for i, row in enumerate(content[:limit], 1):
-            result.append(f"Row {i}: {row}")
+        
+        if current_data_source == "postgresql":
+            for i, row in enumerate(content[:limit], 1):
+                result.append(f"Row {i}: {row}")
+        else:  # BigQuery
+            if isinstance(content, dict) and 'rows' in content:
+                for i, row in enumerate(content['rows'][:limit], 1):
+                    result.append(f"Row {i}: {row}")
         
         return "\n".join(result)
     except ValueError:
@@ -268,7 +297,7 @@ def get_view_content_sample(view_name: str, limit_str: str = "10"):
 def delete_view(view_name: str):
     if not view_name.strip():
         return "❌ Please provide a view name"
-    return db_interface.drop_view(view_name)
+    return get_current_interface().drop_view(view_name)
 
 # TAB 1: Database Operations
 with gr.Blocks(title="Database Operations") as tab1:
@@ -277,6 +306,15 @@ with gr.Blocks(title="Database Operations") as tab1:
     
     with gr.Row():
         with gr.Column(scale=1):
+            gr.Markdown("### 🔄 Data Source Selection")
+            data_source_radio = gr.Radio(
+                choices=["postgresql", "bigquery"],
+                value="postgresql",
+                label="Select Data Source",
+                info="Choose between PostgreSQL and BigQuery"
+            )
+            switch_source_btn = gr.Button("🔄 Switch Data Source", variant="secondary")
+            
             gr.Markdown("### 🗄️ Database Schema")
             discover_btn = gr.Button("📋 Get Schemas", variant="primary")
             database_info_btn = gr.Button("ℹ️ Get Database Info", variant="secondary")
@@ -307,6 +345,7 @@ with gr.Blocks(title="Database Operations") as tab1:
             generate_sample_btn = gr.Button("Generate Sample", variant="secondary")
             
         with gr.Column(scale=2):
+            data_source_status = gr.Textbox(label="🔄 Data Source Status", lines=2)
             schema_info = gr.Textbox(label="📋 Schema Information", lines=5)
             db_info = gr.Textbox(label="ℹ️ Database Information", lines=5)
             table_in_schema = gr.Textbox(label="📊 Tables in Schema", lines=5)
@@ -317,6 +356,11 @@ with gr.Blocks(title="Database Operations") as tab1:
             output_image = gr.Image(label="🎨 Generated Visualization", type="filepath")
     
     # Event handlers for Tab 1
+    switch_source_btn.click(
+        set_data_source, 
+        inputs=data_source_radio, 
+        outputs=data_source_status
+    )
     discover_btn.click(get_schemas, outputs=schema_info)
     database_info_btn.click(get_db_infos, outputs=db_info)
     table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
@@ -504,5 +548,6 @@ if __name__ == "__main__":
     print("🚀 Starting E-commerce Database Analytics Platform...")
     print(f"🌐 Dashboard: http://localhost:7860")
     print("🔗 Integrated with FastAPI service for AI analytics")
+    print("🔗 Supports both PostgreSQL and BigQuery data sources")
     
     interface.launch(server_name="0.0.0.0", server_port=7860, share=True, mcp_server=True)
