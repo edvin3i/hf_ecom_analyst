@@ -104,6 +104,9 @@ def get_list_of_column_in_table(schema, table):
 def run_read_only_query(query: str):
     return db_interface.read_only_query(query)
 
+def create_temp_table_from_query(table_name: str, source_query: str):
+    return db_interface.create_temp_table_from_query(table_name, source_query)
+
 def create_sample_image():
     img_path = "./sample_graph.png"
     if not os.path.exists(img_path):

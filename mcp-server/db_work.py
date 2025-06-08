@@ -237,3 +237,22 @@ class DatabaseInterface:
                 return result
         finally:
             conn.close()
+
+    def create_temp_table_from_query(self, table_name: str, source_query: str) -> str:
+        """Create temporary table from any SELECT query"""
+        try:
+            conn = self.get_db_connection()
+            try:
+                with conn.cursor() as cur:
+                    temp_query = f"CREATE TEMP TABLE {table_name} AS {source_query}"
+                    cur.execute(temp_query)
+                    conn.commit()
+                    print(f"✅ Temporary table '{table_name}' created successfully")
+                    return f"✅ Temporary table '{table_name}' created successfully"
+            except Exception as e:
+                conn.rollback()
+                return f"❌ Error creating temp table: {str(e)}"
+            finally:
+                conn.close()
+        except Exception as e:
+            return f"❌ Connection error: {str(e)}"
