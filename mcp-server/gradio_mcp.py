@@ -319,7 +319,7 @@ def query_and_generate_graph_wrapper(query: str, graph_type: str):
 			return None, "❌ Query returned no data or unexpected format (PostgreSQL)."
 
 		if not data_dict.get("labels") or not data_dict.get("values"):
-			 return None, "❌ Failed to extract labels and values from query result."
+			return None, "❌ Failed to extract labels and values from query result."
 
 		image_path, status = api_service.generate_graph(graph_type, data_dict)
 		return image_path, status
