@@ -199,3 +199,5 @@ test*
 mcp-server/test_anova.ipynb
 
 mcp-server/exported_data.sql
+
+mcp-server/description_embedding_script.py
