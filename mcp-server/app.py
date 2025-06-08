@@ -541,7 +541,13 @@ with gr.Blocks(title="AI Analytics") as tab2:
 				placeholder="Analyze customer purchase patterns..."
 			)
 			generate_code_btn = gr.Button("🧠 Generate Code", variant="primary")
-			
+
+		with gr.Column(scale=2):
+			code_output = gr.Textbox(label="🤖 AI Generated Code/Analysis", lines=10)
+			code_status = gr.Textbox(label="Code Status", lines=2)
+
+	with gr.Row():
+		with gr.Column(scale=1):
 			gr.Markdown("### 📈 Graph Generation")
 			graph_type_input = gr.Textbox(label="Graph Type", placeholder="bar, line, pie, scatter")
 			data_dict_input = gr.Textbox(
@@ -550,7 +556,6 @@ with gr.Blocks(title="AI Analytics") as tab2:
 				placeholder='{"labels": ["A", "B", "C"], "values": [1, 2, 3]}'
 			)
 			generate_graph_btn = gr.Button("📊 Generate Graph", variant="primary")
-
 			gr.Markdown("### 🔍 Query & Generate Graph")
 			query_for_graph_input = gr.Textbox(
 				label="SQL Query for Graph",
@@ -559,7 +564,13 @@ with gr.Blocks(title="AI Analytics") as tab2:
 			)
 			graph_type_for_query_input = gr.Textbox(label="Graph Type", placeholder="bar, line, pie, scatter")
 			query_and_graph_btn = gr.Button("📈 Query & Generate Graph", variant="primary")
+
+		with gr.Column(scale=2):
+			graph_output = gr.Image(label="📈 Generated Graph", type="filepath")
+			graph_status = gr.Textbox(label="Graph Status", lines=2)
 			
+	with gr.Row():
+		with gr.Column(scale=1):
 			gr.Markdown("### 📁 File Download")
 			file_path_input = gr.Textbox(label="File Path", placeholder="path/to/file.csv")
 			download_btn = gr.Button("📥 Download File", variant="secondary")
@@ -569,10 +580,6 @@ with gr.Blocks(title="AI Analytics") as tab2:
 			embed_btn = gr.Button("📍​ Embed text", variant="secondary")
 			
 		with gr.Column(scale=2):
-			code_output = gr.Textbox(label="🤖 AI Generated Code/Analysis", lines=10)
-			code_status = gr.Textbox(label="Code Status", lines=2)
-			graph_output = gr.Image(label="📈 Generated Graph", type="filepath")
-			graph_status = gr.Textbox(label="Graph Status", lines=2)
 			download_status = gr.Textbox(label="📁 Download Status", lines=3)
 			embed_text = gr.Textbox(label="Vector")
 	
