@@ -111,6 +111,10 @@ def create_sample_image():
         img.save(img_path)
     return img_path
 
+def serve_image_from_path():
+    """Serve the sample image"""
+    return create_sample_image()
+
 def do_annova(table_name, min_sample_size=0):
     '''
 		this function runs the annova on the dataset and render the associated F_score and p_value
