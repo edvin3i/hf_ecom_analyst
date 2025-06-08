@@ -49,8 +49,14 @@ class BigQueryInterface:
         """
         if not table_name:
             return table_name
-            
-        parts = table_name.strip().split('.')
+        
+        # First remove any backticks
+        clean_name = table_name.strip().replace('`', '')
+        parts = clean_name.split('.')
+        
+        # If it contains INFORMATION_SCHEMA, it's likely already qualified
+        if 'INFORMATION_SCHEMA' in clean_name:
+            return clean_name
         
         if len(parts) == 1:
             # Only table name provided, add both project and dataset
@@ -58,9 +64,12 @@ class BigQueryInterface:
         elif len(parts) == 2:
             # Dataset and table provided, add project
             return f"{self.project_name}.{parts[0]}.{parts[1]}"
+        elif len(parts) >= 3:
+            # Already fully qualified or system table
+            return clean_name
         else:
-            # Already fully qualified or has more parts than expected
-            return table_name
+            # Fallback
+            return clean_name
 
     def process_query(self, query: str) -> str:
         """
@@ -69,12 +78,22 @@ class BigQueryInterface:
         """
         import re
         
+        # Remove trailing semicolons which can cause errors in BigQuery
+        query = query.strip()
+        if query.endswith(';'):
+            query = query[:-1]
+            
         # Match patterns like: FROM table_name, JOIN table_name, etc.
-        table_pattern = r'(FROM|JOIN)\s+`?([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+){0,2})`?'
+        # Updated pattern to better handle already qualified names
+        table_pattern = r'(FROM|JOIN)\s+`?([a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_\-]+)*)`?'
         
         def replace_table(match):
             clause = match.group(1)  # FROM or JOIN
             table = match.group(2)   # table name
+            
+            # Don't process if it's already a complex qualified name or system table
+            if table.count('.') >= 2 or 'INFORMATION_SCHEMA' in table:
+                return f"{clause} `{table}`"
             
             # Format the table name
             formatted_table = self.format_table_name(table)
@@ -89,7 +108,7 @@ class BigQueryInterface:
     def execute_query(self, query: str):
         """Execute query via POST request to BigQuery endpoint"""
         try:
-            # Process query to autocorrect table names
+            # Process query to autocorrect table names and remove trailing semicolons
             processed_query = self.process_query(query)
             
             payload = {"query": processed_query}
@@ -176,6 +195,11 @@ class BigQueryInterface:
         # Sanitize view name (basic validation)
         if not view_name.replace('_', '').replace('-', '').replace('.', '').isalnum():
             return "❌ View name contains invalid characters. Use only letters, numbers, underscores, hyphens, and dots"
+        
+        # Remove any trailing semicolons from the query
+        query = query.strip()
+        if query.endswith(';'):
+            query = query[:-1]
         
         if validate_only:
             # Just validate the query without executing (using dry run)
@@ -272,10 +296,121 @@ class BigQueryInterface:
         except Exception as e:
             return f"❌ Error executing query: {str(e)}"
     
-    def create_table_from_query(self, table_name: str, source_query: str):
-        """Create a table from query in BigQuery (not implemented for safety)"""
-        return "❌ Table creation from query is not implemented for BigQuery interface for safety reasons. Use BigQuery console for table operations."
-
+    def create_table_from_query(self, table_name: str, source_query: str, drop_if_exists: bool = True):
+        """Create a table from query in BigQuery"""
+        if not table_name or not table_name.strip():
+            return "❌ Table name cannot be empty"
+        if not source_query or not source_query.strip():
+            return "❌ Query cannot be empty"
+        
+        # Validate table name format
+        if not table_name.replace('_', '').replace('-', '').replace('.', '').isalnum():
+            return "❌ Table name contains invalid characters. Use only letters, numbers, underscores, hyphens, and dots"
+        
+        # Protect system tables
+        base_table_name = table_name.split('.')[-1] if '.' in table_name else table_name
+        if base_table_name in ["transactions_train", "customers", "articles"]:
+            return f"❌ Table '{base_table_name}' is a system table and cannot be overwritten"
+        
+        try:
+            # Format the table name to make sure it's fully qualified
+            formatted_table_name = self.format_table_name(table_name)
+            
+            # Remove any trailing semicolons from the query
+            source_query = source_query.strip()
+            if source_query.endswith(';'):
+                source_query = source_query[:-1]
+            
+            # First check if the query is valid
+            validate_query = f"SELECT * FROM ({source_query}) LIMIT 0"
+            self.execute_query(validate_query)
+            
+            # Then create the table
+            if drop_if_exists:
+                # Use CREATE OR REPLACE for BigQuery
+                create_table_query = f"""
+                CREATE OR REPLACE TABLE `{formatted_table_name}` AS 
+                {source_query}
+                """
+            else:
+                # Use IF NOT EXISTS when drop_if_exists is False
+                create_table_query = f"""
+                CREATE TABLE IF NOT EXISTS `{formatted_table_name}` AS 
+                {source_query}
+                """
+                
+            self.execute_query(create_table_query)
+            
+            # Get row count for confirmation - make sure to use the already formatted name
+            count_query = f"SELECT COUNT(*) as row_count FROM `{formatted_table_name}`"
+            result = self.execute_query(count_query)
+            
+            # Extract the row count from the result
+            if isinstance(result, dict) and 'row_count' in result:
+                count = result['row_count']
+            else:
+                count = "unknown number of"
+                
+            return f"✅ Table '{formatted_table_name}' created successfully with {count} rows"
+        except Exception as e:
+            return f"❌ Error creating table: {str(e)}"
+    
     def drop_table(self, table_name: str):
-        """Drop a table in BigQuery (not implemented for safety)"""
-        return "❌ Table dropping is not implemented for BigQuery interface for safety reasons. Use BigQuery console for table operations."
+        """Drop a table in BigQuery"""
+        if not table_name or not table_name.strip():
+            return "❌ Table name cannot be empty"
+        
+        # Protect system tables
+        base_table_name = table_name.split('.')[-1] if '.' in table_name else table_name
+        if base_table_name in ["transactions_train", "customers", "articles"]:
+            return f"❌ Table '{base_table_name}' is a system table and cannot be dropped"
+        
+        try:
+            # Format the table name to make sure it's fully qualified
+            formatted_table_name = self.format_table_name(table_name)
+            
+            drop_query = f"DROP TABLE IF EXISTS `{formatted_table_name}`"
+            self.execute_query(drop_query)
+            return f"✅ Table '{formatted_table_name}' successfully dropped"
+        except Exception as e:
+            return f"❌ Error dropping table: {str(e)}"
+    
+    def get_table_schema(self, table_name: str):
+        """Get the schema of a table"""
+        try:
+            # Format the table name to make sure it's fully qualified
+            formatted_table_name = self.format_table_name(table_name)
+            parts = formatted_table_name.split('.')
+            
+            if len(parts) != 3:
+                return "❌ Please provide a valid table name (either simple or fully qualified)"
+            
+            project, dataset, table = parts
+            
+            # Query INFORMATION_SCHEMA.COLUMNS for the table schema
+            schema_query = f"""
+            SELECT 
+              column_name,
+              data_type,
+              is_nullable
+            FROM 
+              `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
+            WHERE 
+              table_name = '{table}'
+            ORDER BY 
+              ordinal_position
+            """
+            
+            return self.execute_query(schema_query)
+        except Exception as e:
+            return f"❌ Error retrieving table schema: {str(e)}"
+        
+    def get_table_preview(self, table_name: str, limit: int = 10):
+        """Get a preview of table data"""
+        try:
+            # Format the table name
+            formatted_table = self.format_table_name(table_name)
+            query = f"SELECT * FROM `{formatted_table}` LIMIT {limit}"
+            return self.execute_query(query)
+        except Exception as e:
+            return f"❌ Error previewing table: {str(e)}"
