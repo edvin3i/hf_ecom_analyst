@@ -23,15 +23,21 @@ class BigQueryInterface:
         
         self.endpoint_url = os.getenv('BIGQUERY_ENDPOINT_URL')
         self.headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f"Bearer {os.getenv('BIGQUERY_API_KEY', '')}"
+            'Content-Type': 'application/json'
         }
+        
+        # Only add authorization if API key is provided
+        api_key = os.getenv('BIGQUERY_API_KEY')
+        if api_key:
+            self.headers['Authorization'] = f"Bearer {api_key}"
         
         if not self.endpoint_url:
             raise ValueError("BIGQUERY_ENDPOINT_URL environment variable is required")
         
         print('=============> BigQuery endpoint:', self.endpoint_url)
-        
+        print('=============> Project: nodal-pod-462214-f0, Dataset: huggingface_1')
+        print('=============> Available tables: articles, customers, transactions_train')
+
     def execute_query(self, query: str):
         """Execute query via POST request to BigQuery endpoint"""
         try:
@@ -139,7 +145,7 @@ class BigQueryInterface:
             table_schema,
             table_name,
             view_definition
-        FROM INFORMATION_SCHEMA.VIEWS 
+        FROM `nodal-pod-462214-f0.huggingface_1.INFORMATION_SCHEMA.VIEWS`
         WHERE table_schema NOT IN ('INFORMATION_SCHEMA')
         ORDER BY table_schema, table_name
         """
