@@ -583,122 +583,37 @@ with gr.Blocks(title="AI Analytics") as tab2:
 		outputs=[graph_output, graph_status]
 	)
 
-# TAB 3: View Management
-with gr.Blocks(title="View Management") as tab3:
-	gr.Markdown("# 🗄️ View Management Center")
-	gr.Markdown("*Create, manage, and explore database views*")
-
-	with gr.Row():
-		with gr.Column(scale=1):
-			gr.Markdown("### 📊 Analytics Views Management")
-			create_analytics_btn = gr.Button("📈 Create All Analytics Views", variant="primary", size="lg")
-		with gr.Column(scale=2):
-			views_creation_output = gr.Textbox(
-				label="📈 Views Creation Status", 
-				lines=5,
-				info="Status of analytics views creation"
-			)
-	with gr.Row():
-		with gr.Column(scale=1):
-			gr.Markdown("### 📋 View Browser")
-			refresh_views_btn = gr.Button("🔄 Refresh View List", variant="secondary")
-		with gr.Column(scale=2):
-				views_list_output = gr.Textbox(
-				label="📋 Available Views", 
-				lines=10,
-				info="List of all database views"
-			)
-				
-	with gr.Row():
-		with gr.Column(scale=1):
-			gr.Markdown("### 🔍 View Content Explorer")
-			view_name_input = gr.Textbox(
-				label="View Name", 
-				placeholder="customer_avg_age_by_article_group",
-				info="Enter exact view name"
-			)
-			content_limit_input = gr.Textbox(
-				label="Row Limit", 
-				value="10",
-				info="Number of rows to display (1-1000)"
-			)
-			view_content_btn = gr.Button("👁️ Show View Content", variant="secondary")
-		with gr.Column(scale=2):
-				view_content_output = gr.Textbox(
-				label="🔍 View Content", 
-				lines=10,
-				info="Sample data from selected view"
-			)
-
-	with gr.Row():
-		with gr.Column(scale=1):
-			gr.Markdown("### 🗑️ View Management")
-			delete_view_name = gr.Textbox(label="View Name to Delete", placeholder="view_to_delete")
-			delete_view_btn = gr.Button("🗑️ Delete View", variant="stop")
-		with gr.Column(scale=2):
-			delete_status_output = gr.Textbox(
-				label="🗑️ Deletion Status", 
-				lines=2,
-				info="View deletion results"
-			)
-	
-	# Event handlers for Tab 3
-	create_analytics_btn.click(
-		create_analytics_views_from_file, 
-		outputs=views_creation_output
-	)
-
-	refresh_views_btn.click(
-		get_all_views,
-		outputs=views_list_output
-	)
-
-	view_content_btn.click(
-		get_view_content_sample,
-		inputs=[view_name_input, content_limit_input],
-		outputs=view_content_output
-	)
-
-	delete_view_btn.click(
-		delete_view,
-		inputs=delete_view_name,
-		outputs=delete_status_output
-	)
-
-	# Auto-refresh views list when this tab loads
-	tab3.load(get_all_views, outputs=views_list_output)
-
 # TAB 4: Statistical Analysis
-	with gr.Blocks(title="Statistical Analysis") as tab4:
-		gr.Markdown("# 📊 Statistical Analysis")
-		gr.Markdown("*Run statistical tests on your data*")
+with gr.Blocks(title="Statistical Analysis") as tab4:
+	gr.Markdown("# 📊 Statistical Analysis")
+	gr.Markdown("*Run statistical tests on your data*")
 
-		with gr.Row():
-			with gr.Column(scale=1):
-				gr.Markdown("### enter a dict that comply for annova function")
-				annova_input = gr.Textbox(label="annova")
-				annova_min_sample_input = gr.Textbox(label="min sample size for annova")
-				annova_btn = gr.Button("run annova")
+	with gr.Row():
+		with gr.Column(scale=1):
+			gr.Markdown("### enter a dict that comply for annova function")
+			annova_input = gr.Textbox(label="annova")
+			annova_min_sample_input = gr.Textbox(label="min sample size for annova")
+			annova_btn = gr.Button("run annova")
 
-				gr.Markdown("### enter a table that comply for tukey function")
-				tukey_input = gr.Textbox(label="tukey")
-				tukey_min_sample_input = gr.Textbox(label="min sample size for tukey")
-				tukey_btn = gr.Button("run tukey")
+			gr.Markdown("### enter a table that comply for tukey function")
+			tukey_input = gr.Textbox(label="tukey")
+			tukey_min_sample_input = gr.Textbox(label="min sample size for tukey")
+			tukey_btn = gr.Button("run tukey")
 
-				gr.Markdown("### Enter a query that comply with the requested embedding format")
-				tsne_cluster_input = gr.Textbox(label="embedding_table")
-				tsne_cluster_btn = gr.Button("run TSNE")
+			gr.Markdown("### Enter a query that comply with the requested embedding format")
+			tsne_cluster_input = gr.Textbox(label="embedding_table")
+			tsne_cluster_btn = gr.Button("run TSNE")
 
-				gr.Markdown("### Enter a query that comply with the requested embedding centroid format")
-				vector_centroid_input = gr.Textbox(label="embedding_table_for_vector")
-				vector_centroid_btn = gr.Button("Compute centroid")
+			gr.Markdown("### Enter a query that comply with the requested embedding centroid format")
+			vector_centroid_input = gr.Textbox(label="embedding_table_for_vector")
+			vector_centroid_btn = gr.Button("Compute centroid")
 
 
-			with gr.Column(scale=2):
-				annova_output = gr.Textbox(label="annova output")
-				tukey_output = gr.Textbox(label="tukey output")
-				tsne_output = gr.Textbox(label="tsne_clustering output")
-				vector_centroid_output = gr.Textbox(label="Centroid")
+		with gr.Column(scale=2):
+			annova_output = gr.Textbox(label="annova output")
+			tukey_output = gr.Textbox(label="tukey output")
+			tsne_output = gr.Textbox(label="tsne_clustering output")
+			vector_centroid_output = gr.Textbox(label="Centroid")
 
 	# FIXED: Proper function bindings with correct inputs/outputs
 	
@@ -708,11 +623,11 @@ with gr.Blocks(title="View Management") as tab3:
 	tsne_cluster_btn.click(do_tsne_embedding, inputs=tsne_cluster_input, outputs=tsne_output)
 	vector_centroid_btn.click(do_vector_centroid, inputs=vector_centroid_input, outputs=vector_centroid_output)
 
-	with gr.Blocks(title="MCP guidelines") as tab5:
-		gr.Markdown("### 📚 Server Documentation")
-		instructions_btn = gr.Button("📖 Get MCP Instructions", variant="secondary")      
-		instructions_output = gr.Textbox(label="📚 MCP Server Instructions", lines=15)
-		instructions_btn.click(get_mcp_server_instructions, outputs=instructions_output)
+with gr.Blocks(title="MCP guidelines") as tab5:
+	gr.Markdown("### 📚 Server Documentation")
+	instructions_btn = gr.Button("📖 Get MCP Instructions", variant="secondary")      
+	instructions_output = gr.Textbox(label="📚 MCP Server Instructions", lines=15)
+	instructions_btn.click(get_mcp_server_instructions, outputs=instructions_output)
 
 # Create the TabbedInterface
 interface = gr.TabbedInterface(
