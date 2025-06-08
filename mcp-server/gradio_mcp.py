@@ -102,9 +102,11 @@ def get_list_of_column_in_table(schema, table):
     return db_interface.list_columns_in_table(schema, table)
 
 def run_read_only_query(query: str):
+    """Run a read only query"""
     return db_interface.read_only_query(query)
 
 def create_temp_table_from_query(table_name: str, source_query: str):
+    """Create a temporary table from a query"""
     return db_interface.create_temp_table_from_query(table_name, source_query)
 
 def create_sample_image():
@@ -287,6 +289,11 @@ with gr.Blocks(title="Database Operations") as tab1:
             gr.Markdown("### 🔍 SQL Query")
             query_input = gr.Textbox(label="SQL Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
             query_btn = gr.Button("Execute Query", variant="primary")
+
+            gr.Markdown("### 🔍 Create Temp Table")
+            table_name_input = gr.Textbox(label="Table Name", placeholder="temp_table")
+            source_query_input = gr.Textbox(label="Source Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
+            create_temp_table_from_query_btn = gr.Button("Create Temp Table", variant="primary")
             
             gr.Markdown("### 🎨 Sample Visualization")
             generate_sample_btn = gr.Button("Generate Sample", variant="secondary")
@@ -306,6 +313,7 @@ with gr.Blocks(title="Database Operations") as tab1:
     column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
     query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
     generate_sample_btn.click(serve_image_from_path, outputs=output_image)
+    create_temp_table_from_query_btn.click(create_temp_table_from_query, inputs=[table_name_input, source_query_input], outputs=temp_table_status)
 
 # TAB 2: API Operations
 with gr.Blocks(title="AI Analytics") as tab2:
