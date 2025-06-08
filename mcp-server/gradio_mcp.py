@@ -312,6 +312,14 @@ with gr.Blocks(title="Database Operations") as tab1:
     annova_btn.click(do_annova, inputs=[annova_input, annova_min_sample_input], outputs=annova_output)
     tukey_btn.click(do_tukey_test, inputs=[tukey_input, tukey_min_sample_input], outputs=tukey_output)
 
+# Create the TabbedInterface
+interface = gr.TabbedInterface(
+    [tab1, tab2, tab3], 
+    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 View Management"],
+    title="E-commerce Database Analytics Platform",
+    theme=gr.themes.Soft()
+)
+
 # Launch the app
 if __name__ == "__main__":
     print("🚀 Starting E-commerce Database Analytics Platform...")
