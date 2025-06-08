@@ -202,6 +202,76 @@ def generate_graph_wrapper(graph_type: str, data_json: str):
     except Exception as e:
         return None, f"❌ Error: {str(e)}"
 
+def query_and_generate_graph_wrapper(query: str, graph_type: str):
+    """Runs a query and then generates a graph from its results."""
+    if not query.strip():
+        return None, "❌ Please provide a SQL query."
+    if not graph_type.strip():
+        return None, "❌ Please provide a graph type."
+
+    query_result = run_read_only_query(query)
+
+    if isinstance(query_result, str) and query_result.startswith("❌"):
+        return None, f"❌ Query execution failed: {query_result}"
+    
+    if not query_result:
+        return None, "❌ Query returned no data."
+
+    data_dict = {}
+    try:
+        if current_data_source == "postgresql":
+            if isinstance(query_result, list) and len(query_result) > 0:
+                # Assuming first column is labels, second is values
+                # And that there are headers in the first row of the result if it's a list of lists/tuples
+                if isinstance(query_result[0], (list, tuple)) and len(query_result[0]) >= 2:
+                    # Check if the first row looks like headers (strings)
+                    if all(isinstance(item, str) for item in query_result[0]):
+                        headers = query_result[0]
+                        data_rows = query_result[1:]
+                    else: # No headers, assume first col labels, second values
+                        headers = ["labels", "values"] # default headers
+                        data_rows = query_result
+
+                    if not data_rows:
+                         return None, "❌ Query returned headers but no data rows."
+
+                    data_dict["labels"] = [str(row[0]) for row in data_rows]
+                    data_dict["values"] = [row[1] for row in data_rows] # Keep original type for values
+                else:
+                    return None, "❌ Query result format not suitable for graphing (PostgreSQL). Expected at least two columns."
+            else:
+                return None, "❌ Query returned no data or unexpected format (PostgreSQL)."
+
+        elif current_data_source == "bigquery":
+            if isinstance(query_result, dict) and 'columns' in query_result and 'rows' in query_result:
+                if len(query_result['columns']) >= 2 and query_result['rows']:
+                    label_col_name = query_result['columns'][0]['name']
+                    value_col_name = query_result['columns'][1]['name']
+                    
+                    labels = []
+                    values = []
+                    for row in query_result['rows']:
+                        labels.append(str(row[0])) # first element for label
+                        values.append(row[1]) # second element for value
+                    data_dict["labels"] = labels
+                    data_dict["values"] = values
+                else:
+                    return None, "❌ Query result format not suitable for graphing (BigQuery). Expected at least two columns and some data."
+            else:
+                return None, "❌ Query returned no data or unexpected format (BigQuery)."
+        else:
+            return None, f"❌ Unsupported data source for this operation: {current_data_source}"
+
+        if not data_dict.get("labels") or not data_dict.get("values"):
+             return None, "❌ Failed to extract labels and values from query result."
+
+        image_path, status = api_service.generate_graph(graph_type, data_dict)
+        return image_path, status
+
+    except Exception as e:
+        return None, f"❌ Error processing query result or generating graph: {str(e)}"
+
+
 def download_file_wrapper(file_path: str):
     if not file_path.strip():
         return "❌ Please provide a file path"
@@ -350,6 +420,15 @@ with gr.Blocks(title="AI Analytics") as tab2:
             )
             generate_graph_btn = gr.Button("📊 Generate Graph", variant="primary")
             
+            gr.Markdown("### 🔍 Query & Generate Graph")
+            query_for_graph_input = gr.Textbox(
+                label="SQL Query for Graph",
+                lines=3,
+                placeholder="SELECT category, COUNT(*) FROM sales GROUP BY category"
+            )
+            graph_type_for_query_input = gr.Textbox(label="Graph Type", placeholder="bar, line, pie, scatter")
+            query_and_graph_btn = gr.Button("📈 Query & Generate Graph", variant="primary")
+
             gr.Markdown("### 📁 File Download")
             file_path_input = gr.Textbox(label="File Path", placeholder="path/to/file.csv")
             download_btn = gr.Button("📥 Download File", variant="secondary")
@@ -376,6 +455,11 @@ with gr.Blocks(title="AI Analytics") as tab2:
         download_file_wrapper, 
         inputs=file_path_input, 
         outputs=download_status
+    )
+    query_and_graph_btn.click(
+        query_and_generate_graph_wrapper,
+        inputs=[query_for_graph_input, graph_type_for_query_input],
+        outputs=[graph_output, graph_status]
     )
 
 # TAB 3: View Management
