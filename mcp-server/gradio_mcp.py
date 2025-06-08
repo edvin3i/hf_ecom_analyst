@@ -252,62 +252,78 @@ def download_file_wrapper(file_path: str):
     local_path, status = api_service.download_file(file_path)
     return status
 
-# def create_analytics_views_from_file():
-#     """### `create_analytics_views_from_file()`
-#             - **Purpose**: Create predefined analytics views from SQL file
-#             - **Returns**: Status of view creation process
-#             - **Use Case**: Setting up standard business intelligence views"""
-#     try:
-#         result = db_interface.create_analytics_views()
-#         return result
-#     except Exception as e:
-#         return f"❌ Error creating views: {str(e)}"
-
-# def get_all_views():
-#     try:
-#         views = db_interface.list_views_detailed()
-#         if not views:
-#             return "No views found in database"
-        
-#         result = []
-#         for view in views:
-#             schema, name, owner, definition = view
-#             short_def = (definition[:100] + "...") if len(definition) > 100 else definition
-#             result.append(f"📋 {schema}.{name} (Owner: {owner})\n   {short_def}\n")
-        
-#         return "\n".join(result)
-#     except Exception as e:
-#         return f"❌ Error listing views: {str(e)}"
-
-# def get_view_content_sample(view_name: str, limit_str: str = "10"):
-#     if not view_name.strip():
-#         return "❌ Please provide a view name"
+def get_mcp_server_instructions():
+    """
+    Returns comprehensive usage guidelines and documentation for all MCP server functions.
+    Call this function first to understand available tools, workflows, and best practices.
     
-#     try:
-#         limit = int(limit_str) if limit_str.strip() else 10
-#         limit = min(max(limit, 1), 1000)
-        
-#         content = db_interface.get_view_content(view_name, limit)
-#         if isinstance(content, str):
-#             return content
-        
-#         if not content:
-#             return f"View '{view_name}' exists but contains no data"
-        
-#         result = [f"📊 Sample data from view '{view_name}' (showing {len(content)} rows):\n"]
-#         for i, row in enumerate(content[:limit], 1):
-#             result.append(f"Row {i}: {row}")
-        
-#         return "\n".join(result)
-#     except ValueError:
-#         return "❌ Invalid limit value - please enter a number"
-#     except Exception as e:
-#         return f"❌ Error getting view content: {str(e)}"
+    This function provides:
+    - Complete function documentation
+    - Recommended workflows  
+    - Best practices for MCP clients
+    - Database schema information
+    - Statistical analysis guidelines
+    """
+    return """
+    ## Purpose
+            This MCP server provides comprehensive e-commerce database analytics capabilities, enabling clients to explore database schemas, run queries, create views, perform statistical analysis, and generate AI-powered insights. The server is designed to help users analyze customer behavior, sales patterns, and business metrics from e-commerce data.
+                    
+            ## 🎯 Use Cases
+            This MCP server is designed for:
+            - **E-commerce Analytics**: Customer behavior, sales patterns, product performance
+            - **Business Intelligence**: KPI tracking, trend analysis, forecasting
+            - **Statistical Research**: Hypothesis testing, comparative analysis
+            - **Data Exploration**: Schema discovery, data profiling, relationship analysis
+            - **AI-Assisted Insights**: Natural language to analysis, automated reporting
+                    
+            ## 📊 Database Schema & Discovery Functions
+            ### `get_schemas()`**Purpose**: Retrieve all database schemas
+            ### `get_db_infos()` **Purpose**: Get comprehensive database information and metadata
+            ### `get_list_of_tables_in_schema(schema_name: str)` **Purpose**: List all tables within a specific schema
+            ### `get_list_of_column_in_table(schema_name: str, table_name: str)` **Purpose**: Get detailed column information for a specific table
 
-# def delete_view(view_name: str):
-#     if not view_name.strip():
-#         return "❌ Please provide a view name"
-#     return db_interface.drop_view(view_name)
+            ## 🔍 Query & Data Manipulation Functions
+            ### `run_read_only_query(query: str)` **Purpose**: Execute read-only SQL queries safely
+            ### `create_table_from_query(table_name: str, source_query: str)` **Purpose**: Create permanent tables from SELECT queries
+            ### `drop_table(table_name: str)` **Purpose**: Remove tables from the database- **Use Case**: Cleaning up temporary analysis tables
+
+            ## 📈 Statistical Analysis Functions
+            ### `do_annova(table_name: str, min_sample_size: int = 0)` **Purpose**: Perform ANOVA (Analysis of Variance) statistical test- **Use Case**: Testing if there are significant differences between group means
+            ### `do_tukey_test(table_name: str, min_sample_size: int = 0)` **Purpose**: Perform Tukey's HSD post-hoc analysis after ANOVA **Use Case**: Identifying which specific groups differ significantly **Prerequisite**: Should be used after significant ANOVA results
+
+            ## 🤖 AI-Powered Analytics Functions
+            ### `generate_code_wrapper(user_request: str)`- **Purpose**: Generate and execute Python code using AI based on natural language requests
+            ### `generate_graph_wrapper(graph_type: str, data_json: str)`- **Purpose**: Create visualizations using matplotlib **Use Case**: Creating charts and graphs for presentations- **Example**: `{"labels": ["Q1", "Q2", "Q3"], "values": [100, 150, 200]}`
+            ### `download_file_wrapper(file_path: str)`- **Purpose**: Download files from the analytics service
+
+            ## 🔄 Recommended Workflows
+            ### 1. Discovery Workflow
+            get_schemas() → Discover available schemas
+            get_list_of_tables_in_schema("public") → Find tables
+            get_list_of_column_in_table("public", "customers") → Understand structure
+            run_read_only_query("SELECT * FROM customers LIMIT 5") → Sample data
+
+            ### 2. Analysis Workflow
+            run_read_only_query() → Explore data
+            create_table_from_query() → Create analysis datasets
+            do_annova() → Statistical testing
+            do_tukey_test() → Post-hoc analysis
+            generate_graph_wrapper() → Visualize results
+            
+            ### 3. AI-Assisted Analysis
+            generate_code_wrapper("Analyze customer segments") → Get AI insights
+            Use results to guide further manual analysis
+            generate_graph_wrapper() → Visualize AI findings
+                                 
+            ## ✅ Best Practices for MCP Clients
+            1. **Start with Discovery**: Always begin by exploring schemas and tables before analysis
+            2. **Use Read-Only Queries**: Prefer `run_read_only_query()` for exploration to maintain data safety
+            3. **Leverage Views**: Use `get_all_views()` to find pre-built analytics before creating custom queries
+            4. **Statistical Validation**: Use `do_annova()` before `do_tukey_test()` for proper statistical workflow
+            5. **AI Enhancement**: Use `generate_code_wrapper()` for complex analysis that would be difficult to code manually
+            6. **Clean Up**: Use `drop_table()` to remove temporary analysis tables when done
+            7. **Error Handling**: All functions return status indicators - check for errors before proceeding
+            8. **Data Safety**: Core tables (transactions, customers, articles) are protected from modification"""
 
 # TAB 1: Database Operations
 with gr.Blocks(title="Database Operations") as tab1:
@@ -417,91 +433,6 @@ with gr.Blocks(title="AI Analytics") as tab2:
         outputs=download_status
     )
 
-# TAB 3: View Management
-with gr.Blocks(title="View Management") as tab3:
-    gr.Markdown("# 🗄️ View Management Center")
-    gr.Markdown("*Create, manage, and explore database views*")
-
-    with gr.Row():
-        with gr.Column(scale=1):
-            gr.Markdown("### 📊 Analytics Views Management")
-            create_analytics_btn = gr.Button("📈 Create All Analytics Views", variant="primary", size="lg")
-        with gr.Column(scale=2):
-            views_creation_output = gr.Textbox(
-                label="📈 Views Creation Status", 
-                lines=5,
-                info="Status of analytics views creation"
-            )
-    with gr.Row():
-        with gr.Column(scale=1):
-            gr.Markdown("### 📋 View Browser")
-            refresh_views_btn = gr.Button("🔄 Refresh View List", variant="secondary")
-        with gr.Column(scale=2):
-                views_list_output = gr.Textbox(
-                label="📋 Available Views", 
-                lines=10,
-                info="List of all database views"
-            )
-                
-    with gr.Row():
-        with gr.Column(scale=1):
-            gr.Markdown("### 🔍 View Content Explorer")
-            view_name_input = gr.Textbox(
-                label="View Name", 
-                placeholder="customer_avg_age_by_article_group",
-                info="Enter exact view name"
-            )
-            content_limit_input = gr.Textbox(
-                label="Row Limit", 
-                value="10",
-                info="Number of rows to display (1-1000)"
-            )
-            view_content_btn = gr.Button("👁️ Show View Content", variant="secondary")
-        with gr.Column(scale=2):
-                view_content_output = gr.Textbox(
-                label="🔍 View Content", 
-                lines=10,
-                info="Sample data from selected view"
-            )
-
-    with gr.Row():
-        with gr.Column(scale=1):
-            gr.Markdown("### 🗑️ View Management")
-            delete_view_name = gr.Textbox(label="View Name to Delete", placeholder="view_to_delete")
-            delete_view_btn = gr.Button("🗑️ Delete View", variant="stop")
-        with gr.Column(scale=2):
-            delete_status_output = gr.Textbox(
-                label="🗑️ Deletion Status", 
-                lines=2,
-                info="View deletion results"
-            )
-    
-    # Event handlers for Tab 3
-    create_analytics_btn.click(
-        create_analytics_views_from_file, 
-        outputs=views_creation_output
-    )
-
-    refresh_views_btn.click(
-        get_all_views,
-        outputs=views_list_output
-    )
-
-    view_content_btn.click(
-        get_view_content_sample,
-        inputs=[view_name_input, content_limit_input],
-        outputs=view_content_output
-    )
-
-    delete_view_btn.click(
-        delete_view,
-        inputs=delete_view_name,
-        outputs=delete_status_output
-    )
-
-    # Auto-refresh views list when this tab loads
-    tab3.load(get_all_views, outputs=views_list_output)
-
 # TAB 4: Statistical Analysis
     with gr.Blocks(title="Statistical Analysis") as tab4:
         gr.Markdown("# 📊 Statistical Analysis")
@@ -530,83 +461,16 @@ with gr.Blocks(title="View Management") as tab3:
     annova_btn.click(do_annova, inputs=[annova_input, annova_min_sample_input], outputs=annova_output)
     tukey_btn.click(do_tukey_test, inputs=[tukey_input, tukey_min_sample_input], outputs=tukey_output)
 
-    # TAB 5: MCP guidelines
-    with gr.Blocks(title="MCP Guidelines") as tab5:
-        gr.Markdown("# 📚 MCP Client Guidelines")
-        gr.Markdown("*Complete documentation for MCP clients using this analytics server*")
-    with gr.Column():
-        gr.Markdown("""
-            ## Purpose
-            This MCP server provides comprehensive e-commerce database analytics capabilities, enabling clients to explore database schemas, run queries, create views, perform statistical analysis, and generate AI-powered insights. The server is designed to help users analyze customer behavior, sales patterns, and business metrics from e-commerce data.
-                    
-            ## 🎯 Use Cases
-            This MCP server is designed for:
-            - **E-commerce Analytics**: Customer behavior, sales patterns, product performance
-            - **Business Intelligence**: KPI tracking, trend analysis, forecasting
-            - **Statistical Research**: Hypothesis testing, comparative analysis
-            - **Data Exploration**: Schema discovery, data profiling, relationship analysis
-            - **AI-Assisted Insights**: Natural language to analysis, automated reporting
-                    
-            ## 📊 Database Schema & Discovery Functions
-            ### `get_schemas()`**Purpose**: Retrieve all database schemas
-            ### `get_db_infos()` **Purpose**: Get comprehensive database information and metadata
-            ### `get_list_of_tables_in_schema(schema_name: str)` **Purpose**: List all tables within a specific schema
-            ### `get_list_of_column_in_table(schema_name: str, table_name: str)` **Purpose**: Get detailed column information for a specific table
-
-            ## 🔍 Query & Data Manipulation Functions
-            ### `run_read_only_query(query: str)` **Purpose**: Execute read-only SQL queries safely
-            ### `create_table_from_query(table_name: str, source_query: str)` **Purpose**: Create permanent tables from SELECT queries
-            ### `drop_table(table_name: str)` **Purpose**: Remove tables from the database- **Use Case**: Cleaning up temporary analysis tables
-
-            ## 📈 Statistical Analysis Functions
-            ### `do_annova(table_name: str, min_sample_size: int = 0)` **Purpose**: Perform ANOVA (Analysis of Variance) statistical test- **Use Case**: Testing if there are significant differences between group means
-            ### `do_tukey_test(table_name: str, min_sample_size: int = 0)` **Purpose**: Perform Tukey's HSD post-hoc analysis after ANOVA **Use Case**: Identifying which specific groups differ significantly **Prerequisite**: Should be used after significant ANOVA results
-
-            ## 🤖 AI-Powered Analytics Functions
-            ### `generate_code_wrapper(user_request: str)`- **Purpose**: Generate and execute Python code using AI based on natural language requests
-            ### `generate_graph_wrapper(graph_type: str, data_json: str)`- **Purpose**: Create visualizations using matplotlib **Use Case**: Creating charts and graphs for presentations- **Example**: `{"labels": ["Q1", "Q2", "Q3"], "values": [100, 150, 200]}`
-            ### `download_file_wrapper(file_path: str)`- **Purpose**: Download files from the analytics service
-
-            ## 🔄 Recommended Workflows
-
-            ### 1. Discovery Workflow
-            get_schemas() → Discover available schemas
-            get_list_of_tables_in_schema("public") → Find tables
-            get_list_of_column_in_table("public", "customers") → Understand structure
-            run_read_only_query("SELECT * FROM customers LIMIT 5") → Sample data
-
-            ### 2. Analysis Workflow
-            run_read_only_query() → Explore data
-            create_table_from_query() → Create analysis datasets
-            do_annova() → Statistical testing
-            do_tukey_test() → Post-hoc analysis
-            generate_graph_wrapper() → Visualize results
-                    
-            ### 3. View Management Workflow
-            create_analytics_views_from_file() → Setup standard views
-            get_all_views() → Discover available views
-            get_view_content_sample() → Preview view data
-            Use views in queries for analysis
-            
-            ### 4. AI-Assisted Analysis
-            generate_code_wrapper("Analyze customer segments") → Get AI insights
-            Use results to guide further manual analysis
-            generate_graph_wrapper() → Visualize AI findings
-                                 
-            ## ✅ Best Practices for MCP Clients
-            1. **Start with Discovery**: Always begin by exploring schemas and tables before analysis
-            2. **Use Read-Only Queries**: Prefer `run_read_only_query()` for exploration to maintain data safety
-            3. **Leverage Views**: Use `get_all_views()` to find pre-built analytics before creating custom queries
-            4. **Statistical Validation**: Use `do_annova()` before `do_tukey_test()` for proper statistical workflow
-            5. **AI Enhancement**: Use `generate_code_wrapper()` for complex analysis that would be difficult to code manually
-            6. **Clean Up**: Use `drop_table()` to remove temporary analysis tables when done
-            7. **Error Handling**: All functions return status indicators - check for errors before proceeding
-            8. **Data Safety**: Core tables (transactions, customers, articles) are protected from modification""")
+    with gr.Blocks(title="AI Analytics") as tab5:
+        gr.Markdown("### 📚 Server Documentation")
+        instructions_btn = gr.Button("📖 Get MCP Instructions", variant="secondary")      
+        instructions_output = gr.Textbox(label="📚 MCP Server Instructions", lines=15)
+        instructions_btn.click(get_mcp_server_instructions, outputs=instructions_output)
 
 # Create the TabbedInterface
 interface = gr.TabbedInterface(
-    [tab1, tab2, tab3, tab4, tab5], 
-    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 View Management", "📊 Statistical Analysis", "📊 MCP guidelines"],
+    [tab1, tab2, tab4, tab5], 
+    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 Statistical Analysis", "📊 MCP guidelines"],
     title="E-commerce Database Analytics Platform",
     theme=gr.themes.Soft()
 )
