@@ -194,3 +194,8 @@ cython_debug/
 .cursorindexingignore
 
 *.png
+
+test*
+mcp-server/test_anova.ipynb
+
+mcp-server/exported_data.sql
