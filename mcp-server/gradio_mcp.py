@@ -51,7 +51,6 @@ class API:
             )
             
             if response.status_code == 200:
-                # Save the image temporarily
                 timestamp = int(time.time())
                 image_path = f"./graph_{graph_type}_{timestamp}.png"
                 with open(image_path, "wb") as f:
@@ -74,7 +73,6 @@ class API:
             )
             
             if response.status_code == 200:
-                # Save the downloaded file
                 timestamp = int(time.time())
                 local_path = f"./downloaded_{timestamp}_{os.path.basename(file_path)}"
                 with open(local_path, "wb") as f:
@@ -86,48 +84,28 @@ class API:
         except Exception as e:
             return None, f"❌ Error downloading file: {str(e)}"
 
+# Initialize services
 api_service = API(BASE_URL)
 db_interface = DatabaseInterface()
 
-# Define the functions
+# All function definitions (keeping your existing ones)
 def get_schemas():
-    '''
-    this function allow you to acknowledge the database schema in order for 
-    you to know which schema to query to get the relevant informations
-    '''
     return db_interface.list_schemas()
 
 def get_db_infos():
-    '''
-    this function allow you to acknowledge the relevant database information for you to better understand what is it about
-    '''
     return db_interface.list_database_info()
 
 def get_list_of_tables_in_schema(schema):
-    """
-        this function allows you to get the list of tables (associated with their description if exist) 
-        of all the tables that exist in a schema
-    """
     return db_interface.list_tables_in_schema(schema)
 
 def get_list_of_column_in_table(schema, table):
-    """
-        this function allows you to get the list of columns of a specific table of a specific schema.
-        each column is associated with its datatype and its description if exist 
-    """
     return db_interface.list_columns_in_table(schema, table)
 
-def run_read_only_query(query:str):
-    """
-        based on what you know about the database properties, you can use this function to run read-only query
-        in order to make analysis
-        the output is of shape:
-        List(Tuple()) where each entry if the list is a row and each entry of the tuple is a column value
-    """
+def run_read_only_query(query: str):
     return db_interface.read_only_query(query)
 
 def create_sample_image():
-    img_path = "./EuijP.png"
+    img_path = "./sample_graph.png"
     if not os.path.exists(img_path):
         img = Image.new("RGB", (300, 150), color="lightgreen")
         img.save(img_path)
@@ -191,7 +169,6 @@ def do_tukey_test(table_name, min_sample_size=0):
     return var_stats.tukey_test(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
 
 def generate_code_wrapper(user_request: str):
-    """Wrapper for code generation"""
     if not user_request.strip():
         return "❌ Please provide a request", ""
     
@@ -199,12 +176,10 @@ def generate_code_wrapper(user_request: str):
     return output or "No output generated", status
 
 def generate_graph_wrapper(graph_type: str, data_json: str):
-    """Wrapper for graph generation with JSON parsing"""
     try:
         if not graph_type.strip() or not data_json.strip():
             return None, "❌ Please provide both graph type and data"
         
-        # Parse the JSON data
         data_dict = json.loads(data_json)
         image_path, status = api_service.generate_graph(graph_type, data_dict)
         return image_path, status
@@ -215,31 +190,88 @@ def generate_graph_wrapper(graph_type: str, data_json: str):
         return None, f"❌ Error: {str(e)}"
 
 def download_file_wrapper(file_path: str):
-    """Wrapper for file download"""
     if not file_path.strip():
         return "❌ Please provide a file path"
     
     local_path, status = api_service.download_file(file_path)
     return status
 
-# Create the Gradio Blocks interface
-with gr.Blocks(title="E-commerce Database Analytics", theme=gr.themes.Soft()) as interface:
-    gr.Markdown("# 🛍️ E-commerce Database Analytics Platform")
-    gr.Markdown("*Database exploration with AI-powered analytics and visualization*")
+def create_analytics_views_from_file():
+    try:
+        result = db_interface.create_analytics_views()
+        return result
+    except Exception as e:
+        return f"❌ Error creating views: {str(e)}"
+
+# def execute_custom_sql_file(file_path: str):
+#     if not file_path.strip():
+#         return "❌ Please provide a file path"
+#     return db_interface.execute_sql_file(file_path)
+
+# def create_individual_view(view_name: str, view_query: str):
+#     return db_interface.create_view(view_name, view_query)
+
+def get_all_views():
+    try:
+        views = db_interface.list_views_detailed()
+        if not views:
+            return "No views found in database"
+        
+        result = []
+        for view in views:
+            schema, name, owner, definition = view
+            short_def = (definition[:100] + "...") if len(definition) > 100 else definition
+            result.append(f"📋 {schema}.{name} (Owner: {owner})\n   {short_def}\n")
+        
+        return "\n".join(result)
+    except Exception as e:
+        return f"❌ Error listing views: {str(e)}"
+
+def get_view_content_sample(view_name: str, limit_str: str = "10"):
+    if not view_name.strip():
+        return "❌ Please provide a view name"
+    
+    try:
+        limit = int(limit_str) if limit_str.strip() else 10
+        limit = min(max(limit, 1), 1000)
+        
+        content = db_interface.get_view_content(view_name, limit)
+        if isinstance(content, str):
+            return content
+        
+        if not content:
+            return f"View '{view_name}' exists but contains no data"
+        
+        result = [f"📊 Sample data from view '{view_name}' (showing {len(content)} rows):\n"]
+        for i, row in enumerate(content[:limit], 1):
+            result.append(f"Row {i}: {row}")
+        
+        return "\n".join(result)
+    except ValueError:
+        return "❌ Invalid limit value - please enter a number"
+    except Exception as e:
+        return f"❌ Error getting view content: {str(e)}"
+
+def delete_view(view_name: str):
+    if not view_name.strip():
+        return "❌ Please provide a view name"
+    return db_interface.drop_view(view_name)
+
+# TAB 1: Database Operations
+with gr.Blocks(title="Database Operations") as tab1:
+    gr.Markdown("# 🗄️ Database Operations")
+    gr.Markdown("*Explore database schema, tables, and run queries*")
     
     with gr.Row():
         with gr.Column(scale=1):
-            # Database Schema Section
             gr.Markdown("### 🗄️ Database Schema")
             discover_btn = gr.Button("📋 Get Schemas", variant="primary")
             database_info_btn = gr.Button("ℹ️ Get Database Info", variant="secondary")
             
-            # Table Explorer Section
             gr.Markdown("### 📊 Table Explorer")
             table_in_schema_input = gr.Textbox(label="Schema Name", placeholder="public")
             table_in_schema_btn = gr.Button("Get Tables")
             
-            # Column Explorer Section
             gr.Markdown("### 📄 Column Explorer")
             schema_input = gr.Textbox(label="Schema Name", placeholder="public")
             table_input = gr.Textbox(label="Table Name", placeholder="customers")
@@ -286,5 +318,4 @@ if __name__ == "__main__":
     print(f"🌐 Dashboard: http://localhost:7860")
     print("🔗 Integrated with FastAPI service for AI analytics")
     
-    interface.launch(server_name="0.0.0.0", server_port=7860, mcp_server=True, share=True)
-
+    interface.launch(server_name="0.0.0.0", server_port=7860, share=True, mcp_server=True)
