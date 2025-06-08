@@ -29,7 +29,6 @@ class DatabaseInterface:
             'user': os.getenv('DB_USER'),
             'password': os.getenv('DB_PASSWORD')
         }
-        print('=============>',self.db_config)
         
     def get_db_connection(self):
         """Create database connection"""

@@ -3,6 +3,9 @@ import pandas as pd
 from scipy.stats import f_oneway
 from collections import defaultdict
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
+from sklearn.manifold import TSNE
+import hdbscan
+
 
 
 def anova(db_connection: DatabaseInterface, table_name, min_sample_size=0):
@@ -91,3 +94,45 @@ def tukey_test(db_connection: DatabaseInterface, table_name, min_sample_size=0):
 	significant_results = tukey_df[tukey_df['reject'] == True]
 
 	return significant_results
+
+def embedding_clustering(db_connection: DatabaseInterface, query):
+	"""
+		this tool allow to run a TSNE dimensionality reduction algorythme and a clustering (HDBSCAN) on top of that.
+
+		the input query, is a sql query that MUST return a table with at least the item id and the corresponding embeddding.
+
+		exemple:
+		result = db_connection.read_only_query(query)
+		result shape:
+		article_id | embedding
+		0125456    | [0.3, 0.5 ...]
+
+		the return is a dictionnary that has the following format:
+
+			return {
+				"ids": ids,
+				"x_axis": tsne_projection_x_list,
+				"y_axis": tsne_projection_y_list,
+				"labels": labels
+			}
+	"""
+	
+	result = db_connection.read_only_query(query)
+	tsne = TSNE(n_components=2, random_state=42)
+
+	ids = [item[0] for item in result]
+	article_embeddings = [item[1] for item in result]
+
+	tsne_proj = tsne.fit_transform(article_embeddings)
+
+
+	clusterer = hdbscan.HDBSCAN(min_cluster_size=10)
+	labels = clusterer.fit_predict(tsne_proj)
+
+	return {
+		"ids": ids,
+		"x_axis": tsne_proj[:, 0],
+		"y_axis": tsne_proj[:, 1],
+		"labels": labels
+	}
+
