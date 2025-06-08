@@ -462,25 +462,50 @@ with gr.Blocks(title="Database Operations") as tab1:
 			gr.Markdown("### 🗄️ Database Schema")
 			discover_btn = gr.Button("📋 Get Schemas", variant="primary")
 			database_info_btn = gr.Button("ℹ️ Get Database Info", variant="secondary")
-			
+		with gr.Column(scale=2):
+			schema_info = gr.Textbox(label="📋 Schema Information", lines=5)
+			db_info = gr.Textbox(label="ℹ️ Database Information", lines=5)
+	
+	with gr.Row():
+		with gr.Column(scale=1):
 			gr.Markdown("### 📊 Table Explorer")
 			table_in_schema_input = gr.Textbox(label="Schema Name", placeholder="public")
 			table_in_schema_btn = gr.Button("Get Tables")
-			
+
+		with gr.Column(scale=2):
+			table_in_schema = gr.Textbox(label="📊 Tables in Schema", lines=5)
+
+	with gr.Row():
+		with gr.Column(scale=1):
 			gr.Markdown("### 📄 Column Explorer")
 			schema_input = gr.Textbox(label="Schema Name", placeholder="public")
 			table_input = gr.Textbox(label="Table Name", placeholder="customers")
 			column_btn = gr.Button("Get Columns")
-			
+
+		with gr.Column(scale=2):
+			column_output = gr.Textbox(label="📄 Table Columns", lines=5)
+
+	with gr.Row():
+		with gr.Column(scale=1):
 			gr.Markdown("### 🔍 SQL Query")
 			query_input = gr.Textbox(label="SQL Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
 			query_btn = gr.Button("Execute Query", variant="primary")
 
+		with gr.Column(scale=2):
+			query_output = gr.Textbox(label="🔍 Query Results", lines=8)
+
+	with gr.Row():
+		with gr.Column(scale=1):
 			gr.Markdown("### 🔍 Create Table")
 			table_name_input = gr.Textbox(label="Table Name", placeholder="table")
 			source_query_input = gr.Textbox(label="Source Query", lines=3, placeholder="SELECT * FROM customers LIMIT 10")
 			create_table_from_query_btn = gr.Button("Create Table", variant="primary")
 
+		with gr.Column(scale=2):
+			table_status = gr.Textbox(label="table status")
+
+	with gr.Row():
+		with gr.Column(scale=1):
 			gr.Markdown("### 🔍 Drop Table")
 			drop_table_name_input = gr.Textbox(label="Table Name", placeholder="table")
 			drop_table_btn = gr.Button("Drop Table", variant="primary")
@@ -489,12 +514,6 @@ with gr.Blocks(title="Database Operations") as tab1:
 			generate_sample_btn = gr.Button("Generate Sample", variant="secondary")
 			
 		with gr.Column(scale=2):
-			schema_info = gr.Textbox(label="📋 Schema Information", lines=5)
-			db_info = gr.Textbox(label="ℹ️ Database Information", lines=5)
-			table_in_schema = gr.Textbox(label="📊 Tables in Schema", lines=5)
-			column_output = gr.Textbox(label="📄 Table Columns", lines=5)
-			query_output = gr.Textbox(label="🔍 Query Results", lines=8)
-			table_status = gr.Textbox(label="table status")
 			drop_table_status = gr.Textbox(label="drop table status")
 			output_image = gr.Image(label="🎨 Generated Visualization", type="filepath")
 	
@@ -615,8 +634,6 @@ with gr.Blocks(title="Statistical Analysis") as tab4:
 			tukey_output = gr.Textbox(label="tukey output")
 			tsne_output = gr.Textbox(label="tsne_clustering output")
 			vector_centroid_output = gr.Textbox(label="Centroid")
-
-	# FIXED: Proper function bindings with correct inputs/outputs
 	
 	# Database operations
 	annova_btn.click(do_annova, inputs=[annova_input, annova_min_sample_input], outputs=annova_output)
