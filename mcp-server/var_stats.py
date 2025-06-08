@@ -1,11 +1,12 @@
 from db_work import DatabaseInterface
+import ast
 import pandas as pd
 from scipy.stats import f_oneway
 from collections import defaultdict
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 from sklearn.manifold import TSNE
 import hdbscan
-
+import numpy as np
 
 
 def anova(db_connection: DatabaseInterface, table_name, min_sample_size=0):
@@ -121,9 +122,8 @@ def embedding_clustering(db_connection: DatabaseInterface, query):
 	tsne = TSNE(n_components=2, random_state=42)
 
 	ids = [item[0] for item in result]
-	article_embeddings = [item[1] for item in result]
-
-	tsne_proj = tsne.fit_transform(article_embeddings)
+	article_embeddings = [ast.literal_eval(item[1]) for item in result]
+	tsne_proj = tsne.fit_transform(np.array(article_embeddings))
 
 
 	clusterer = hdbscan.HDBSCAN(min_cluster_size=10)
@@ -135,4 +135,14 @@ def embedding_clustering(db_connection: DatabaseInterface, query):
 		"y_axis": tsne_proj[:, 1],
 		"labels": labels
 	}
+
+def vector_centroid(db_connection: DatabaseInterface, query):
+	result = db_connection.read_only_query(query)
+	embeddings = np.array([ast.literal_eval(item[0]) for item in result])
+	if embeddings.ndim != 2:
+		raise ValueError("Input must be a 2D array of shape (n_vectors, vector_dimension)")
+	return np.mean(embeddings, axis=0)
+
+
+
 
