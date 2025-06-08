@@ -46,17 +46,49 @@ def fastapi_app():
     global agent_executor
     if agent_executor is None:
         api_key = os.environ["GEMINI_API_KEY"]
-        model = "gemini-2.0-flash"
+        
+        # List of models to try, in order of preference
+        models = [
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-8b",
+            "gemini-2.5-flash-preview-05-20",
+            "gemini-2.0-flash-experimental",
+            "gemini-2.5-pro-experimental-03-25",
+        ]
+        
+        initialized_successfully = False
+        for model_name in models:
+            try:
+                print(f"Attempting to initialize agent with model: {model_name}")
+                agent_executor = agent_toolkits.create_python_agent(
+                    llm=ChatOpenAI(temperature=0, model=model_name,
+                                   openai_api_key=api_key, 
+                                   base_url="https://generativelanguage.googleapis.com/v1beta/openai/"),
+                    tool=PythonREPLTool(),
+                    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                    verbose=True,
+                    agent_executor_kwargs={"handle_parsing_errors": True},
+                )
+                print(f"Successfully initialized agent with model: {model_name}")
+                initialized_successfully = True
+                break  # Exit loop if initialization is successful
+            except Exception as e:
+                print(f"Failed to initialize agent with model {model_name}: {e}")
+                agent_executor = None # Ensure agent_executor is None if this attempt fails
+                # Continue to the next model in the list
+        
+        if not initialized_successfully:
+            # This part will be executed if all models fail.
+            # You might want to raise an HTTPException or log a critical error.
+            print("Failed to initialize agent with any of the available models.")
+            # For a FastAPI app, you might want to prevent startup or set a status
+            # indicating the service is degraded. For now, we'll let it proceed,
+            # but endpoints relying on agent_executor will fail if it's None.
+            # Consider raising a more specific error or handling this state.
+            raise RuntimeError("Could not initialize the agent with any available LLM models.")
 
-        agent_executor = agent_toolkits.create_python_agent(
-            llm=ChatOpenAI(temperature=0, model=model,
-                           openai_api_key=api_key, 
-                           base_url="https://generativelanguage.googleapis.com/v1beta/openai/"),
-            tool=PythonREPLTool(),
-            agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-            verbose=True,
-            agent_executor_kwargs={"handle_parsing_errors": True},
-        )
 
     class CodeRequest(BaseModel):
         user_request: str
