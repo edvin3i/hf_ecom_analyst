@@ -529,7 +529,8 @@ with gr.Blocks(title="Database Configuration") as tab01:
 	connect_btn.click(
 		handle_connection,
 		inputs=[host_input, port_input, database_input, user_input, password_input],
-		outputs=connection_status
+		outputs=connection_status,
+		show_api=False
 	)
 
 # TAB 1: Database Operations
@@ -603,7 +604,7 @@ with gr.Blocks(title="Database Operations") as tab1:
     table_in_schema_btn.click(get_list_of_tables_in_schema, inputs=table_in_schema_input, outputs=table_in_schema)
     column_btn.click(get_list_of_column_in_table, inputs=[schema_input, table_input], outputs=column_output)
     query_btn.click(run_read_only_query, inputs=query_input, outputs=query_output)
-    generate_sample_btn.click(serve_image_from_path, outputs=output_image)
+    generate_sample_btn.click(serve_image_from_path, outputs=output_image, show_api=False)
     create_table_from_query_btn.click(create_table_from_query, inputs=[table_name_input, source_query_input], outputs=table_status)
     drop_table_btn.click(drop_table, inputs=drop_table_name_input, outputs=drop_table_status)
 
