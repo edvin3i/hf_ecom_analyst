@@ -495,7 +495,7 @@ def get_mcp_server_instructions():
             7. **Data Safety**: Core tables (transactions, customers, articles) are protected from modification"""
 
 # TAB 0: Database Configuration
-with gr.Blocks(title="Database Configuration") as tab0:
+with gr.Blocks(title="Database Configuration") as tab01:
 	gr.Markdown("# 🔌 Database Configuration")
 	gr.Markdown("*Configure your database connection before using the analytics platform*")
 	
@@ -949,8 +949,8 @@ with gr.Blocks(title="Application Guide") as tab0:
 
 # Create the TabbedInterface
 interface = gr.TabbedInterface(
-    [tab0, tab0, tab1, tab2, tab4, tab5], 
-    tab_names=["🔌 Database Setup", "🎯 Guide", "🗄️ Database Operations", "🤖 AI Analytics", "📊 Statistical Analysis", "📊 MCP guidelines"],
+    [tab0, tab01, tab1, tab2, tab4, tab5], 
+    tab_names=["🎯 Guide","🔌 Database Setup", "🗄️ Database Operations", "🤖 AI Analytics", "📊 Statistical Analysis", "📊 MCP guidelines"],
     title="E-commerce Database Analytics MCP Server",
     theme=gr.themes.Soft()
 )
