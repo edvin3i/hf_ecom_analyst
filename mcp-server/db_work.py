@@ -17,21 +17,34 @@ COLUMN_IN_TABLE=os.getenv('COLUMN_IN_TABLE')
 
 
 class DatabaseInterface:
-    def __init__(self):
+    def __init__(self, db_config: Optional[Dict[str, Any]] = None):
         # Initialize FastMCP server
         self.mcp = FastMCP("ecommerce-mcp-server")
         
-        self.db_config = {
-            'host': os.getenv('DB_HOST'),
-            'port': os.getenv('DB_PORT'),
-            'database': os.getenv('DB_NAME'),
-            'user': os.getenv('DB_USER'),
-            'password': os.getenv('DB_PASSWORD')
-        }
+        if db_config:
+            self.db_config = db_config
+        else:
+            # Fallback to environment variables
+            self.db_config = {
+                'host': os.getenv('DB_HOST'),
+                'port': int(os.getenv('DB_PORT', 5432)),
+                'database': os.getenv('DB_NAME'),
+                'user': os.getenv('DB_USER'),
+                'password': os.getenv('DB_PASSWORD')
+            }
+            
+        # Validate configuration
+        required_fields = ['host', 'database', 'user', 'password']
+        missing_fields = [field for field in required_fields if not self.db_config.get(field)]
+        if missing_fields:
+            raise ValueError(f"Missing required database configuration: {missing_fields}")
         
     def get_db_connection(self):
-        """Create database connection"""
-        return psycopg2.connect(**self.db_config)
+        """Create database connection with error handling"""
+        try:
+            return psycopg2.connect(**self.db_config)
+        except psycopg2.Error as e:
+            raise ConnectionError(f"Failed to connect to database: {str(e)}")
 
     def list_schemas(self):
         print("=======>", LIST_SCHEMA)

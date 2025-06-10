@@ -11,6 +11,10 @@ import time
 
 BASE_URL = "https://beeguy74--example-fastapi-fastapi-app.modal.run"
 
+# Global state for database connection
+db_interface = None
+db_connection_status = "❌ Not Connected"
+
 class API:
 	def __init__(self, base_url: str):
 		self.base_url = base_url
@@ -84,64 +88,102 @@ class API:
 		except Exception as e:
 			return None, f"❌ Error downloading file: {str(e)}"
 
+def setup_database_connection(host: str, port: str, database: str, user: str, password: str):
+	"""Setup database connection with user-provided configuration"""
+	global db_interface, db_connection_status
+	
+	if not all([host.strip(), port.strip(), database.strip(), user.strip(), password.strip()]):
+		db_connection_status = "❌ All fields are required"
+		return db_connection_status, False
+	
+	try:
+		db_config = {
+			'host': host.strip(),
+			'port': int(port.strip()),
+			'database': database.strip(),
+			'user': user.strip(),
+			'password': password.strip()
+		}
+		
+		# Test connection
+		test_interface = DatabaseInterface(db_config)
+		test_connection = test_interface.get_db_connection()
+		test_connection.close()
+		
+		# If successful, set global interface
+		db_interface = test_interface
+		db_connection_status = f"✅ Connected to {database} at {host}:{port}"
+		return db_connection_status, True
+		
+	except ValueError:
+		db_connection_status = "❌ Port must be a valid number"
+		return db_connection_status, False
+	except Exception as e:
+		db_connection_status = f"❌ Connection failed: {str(e)}"
+		return db_connection_status, False
+
+def get_connection_status():
+	"""Get current database connection status"""
+	return db_connection_status
+
+def check_db_connection():
+	"""Check if database is connected before operations"""
+	if db_interface is None:
+		return False, "❌ Please configure database connection first"
+	return True, "✅ Database connected"
+
 # Initialize services
 api_service = API(BASE_URL)
-db_interface = DatabaseInterface()
 
-# All function definitions (keeping your existing ones)
+# Updated database functions with connection checks
 def get_schemas():
-    """### `get_schemas()`
-            - **Purpose**: Retrieve all database schemas
-            - **Returns**: JSON object containing schema information
-            - **Use Case**: Initial database exploration"""
-    return db_interface.list_schemas()
+	"""### `get_schemas()`"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
+	return db_interface.list_schemas()
 
 def get_db_infos():
-    """### `get_db_infos()`
-            - **Purpose**: Get comprehensive database information and metadata
-            - **Returns**: JSON object containing database information
-            - **Use Case**: Initial database exploration"""
-    return db_interface.list_database_info()
+	"""### `get_db_infos()`"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
+	return db_interface.list_database_info()
 
 def get_list_of_tables_in_schema(schema):
-    """### `get_list_of_tables_in_schema(schema_name: str)`
-            - **Purpose**: List all tables within a specific schema
-            - **Parameters**: `schema_name` - Name of the schema to explore
-            - **Returns**: JSON object containing table information
-            - **Use Case**: Initial database exploration"""
-    return db_interface.list_tables_in_schema(schema)
+	"""### `get_list_of_tables_in_schema(schema_name: str)`"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
+	return db_interface.list_tables_in_schema(schema)
 
 def get_list_of_column_in_table(schema, table):
-    """### `get_list_of_column_in_table(schema_name: str, table_name: str)`
-            - **Purpose**: Get detailed column information for a specific table
-            - **Parameters**: `schema_name` - Name of the schema containing the table
-            - **Returns**: JSON object containing column information
-            - **Use Case**: Initial database exploration"""
-    return db_interface.list_columns_in_table(schema, table)
+	"""### `get_list_of_column_in_table(schema_name: str, table_name: str)`"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
+	return db_interface.list_columns_in_table(schema, table)
 
 def run_read_only_query(query: str):
-    """### `run_read_only_query(query: str)`
-            - **Purpose**: Execute read-only SQL queries safely
-            - **Parameters**: `query` - SQL SELECT statement
-            - **Returns**: Query results as rows
-            - **Use Case**: Initial database exploration"""
-    return db_interface.read_only_query(query)
+	"""### `run_read_only_query(query: str)`"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
+	return db_interface.read_only_query(query)
 
 def create_table_from_query(table_name: str, source_query: str):
-    """### `create_table_from_query(table_name: str, source_query: str)`
-            - **Purpose**: Create permanent tables from SELECT queries
-            - **Parameters**: `table_name` - Name of the new table
-            - **Returns**: Status message indicating success or failure
-            - **Use Case**: Create analysis datasets from queries"""
-    return db_interface.create_table_from_query(table_name, source_query)
+	"""### `create_table_from_query(table_name: str, source_query: str)`"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
+	return db_interface.create_table_from_query(table_name, source_query)
 
 def drop_table(table_name: str):
-    """### `drop_table(table_name: str)`
-            - **Purpose**: Remove tables from the database
-            - **Parameters**: `table_name` - Name of the table to drop
-            - **Returns**: Status message indicating success or failure
-            - **Use Case**: Clean up analysis tables"""
-    return db_interface.drop_table(table_name)
+	"""### `drop_table(table_name: str)`"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
+	return db_interface.drop_table(table_name)
 
 def create_sample_image():
 	img_path = "./sample_graph.png"
@@ -155,99 +197,27 @@ def serve_image_from_path():
 	return create_sample_image()
 
 def do_annova(table_name, min_sample_size=0):
-	'''
-		this function runs the annova on the dataset and render the associated F_score and p_value
-		table_name is the name of the table on which you want to run the ANOVA
-		the selected table MUST have the following signature:
-
-		groups | measurement
-
-		exemple with the product_type_age table:
-
-		type | age
-		----------
-		'Coat', '36'
-		'Coat', '36'
-		'Hat/beanie', '32'
-		...
-
-		min_sample_size is used to exclude categories that does not have enough measurement.
-		default = 0: all categories are selected
-
-		return type is: dict
-		{
-			"F-statistic": round(f_stat, 3),
-			"p-value": round(p_value, 3)
-		}
-	'''
+	connected, status = check_db_connection()
+	if not connected:
+		return status
 	return var_stats.anova(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
 
 def do_tukey_test(table_name, min_sample_size=0):
-	'''
-		this function runs a Tukey's HSD (Honestly Significant Difference) test — a post-hoc analysis following ANOVA. 
-		It tells you which specific pairs of groups differ significantly in their means
-		IT is meant to be used after you run a successful anova and you obtain sgnificant F-satatistics and p-value
-		table_name is the name of the table on which you want to run the ANOVA
-		the selected table MUST have the following signature:
-
-		groups | measurement
-
-		exemple with the product_type_age table:
-
-		type | age
-		----------
-		'Coat', 36
-		'Coat', 36
-		'Hat/beanie', 32
-		...
-
-		min_sample_size is used to exclude categories that does not have enough measurement.
-		default = 0: all categories are selected
-
-		the return result is the raw dataframe that correspond to the pair wize categorie that reject the hypothesis of non statistically difference between two group
-		the signature of the dataframe is the following:
-		group1 | group2 | meandiff p-adj | lower | upper | reject (only true)
-	
-	'''
+	connected, status = check_db_connection()
+	if not connected:
+		return status
 	return var_stats.tukey_test(db_interface, table_name=table_name, min_sample_size=int(min_sample_size))
 
 def do_tsne_embedding(query):
-	"""
-
-		this tool allow to run a TSNE dimensionality reduction algorythme and a clustering (HDBSCAN) on top of that.
-
-		the input query, is a sql query that MUST return a table with at least the item id and the corresponding embeddding.
-		FOR COMPUTATIONAL PURPOSE, THE QUERY YOU SEND MUST NOT RETURN A TABLE GREATER THAN 500 OUTPUT ROWS
-		exemple:
-		result = db_connection.read_only_query(query)
-		result shape:
-		article_id | embedding
-		0125456    | [0.3, 0.5 ...]
-
-		the return is a dictionnary that has the following format:
-
-			return {
-				"ids": ids,
-				"x_axis": tsne_projection_x_list,
-				"y_axis": tsne_projection_y_list,
-				"labels": labels
-			}
-	"""
-
+	connected, status = check_db_connection()
+	if not connected:
+		return status
 	return var_stats.embedding_clustering(db_interface, query)
 
 def do_vector_centroid(query):
-	"""
-		this tool allow you to compute the centroid of a list of embedding vectors
-		the input query, is a sql query that MUST return a table with only 1 column, the embeddings.
-		exemple:
-		result = db_connection.read_only_query(query)
-		result shape:
-		 embedding
-		 [0.3, 0.5 ...]
-
-		the return value is the computed centroid vector, that you can use to work with.
-	"""
+	connected, status = check_db_connection()
+	if not connected:
+		return status
 	return var_stats.vector_centroid(db_interface, query)
 
 def embed_text_modal_api(text):
@@ -452,6 +422,44 @@ def get_mcp_server_instructions():
             6. **Error Handling**: All functions return status indicators - check for errors before proceeding
             7. **Data Safety**: Core tables (transactions, customers, articles) are protected from modification"""
 
+# TAB 0: Database Configuration
+with gr.Blocks(title="Database Configuration") as tab0:
+	gr.Markdown("# 🔌 Database Configuration")
+	gr.Markdown("*Configure your database connection before using the analytics platform*")
+	
+	with gr.Row():
+		with gr.Column(scale=1):
+			gr.Markdown("### 🗄️ Database Connection")
+			host_input = gr.Textbox(label="Host", placeholder="database.example.com", value="")
+			port_input = gr.Textbox(label="Port", placeholder="5432", value="")
+			database_input = gr.Textbox(label="Database", placeholder="my_database", value="")
+			user_input = gr.Textbox(label="User", placeholder="db_user", value="")
+			password_input = gr.Textbox(label="Password", type="password", placeholder="••••••••", value="")
+			
+			connect_btn = gr.Button("🔌 Connect to Database", variant="primary")
+			
+		with gr.Column(scale=1):
+			connection_status = gr.Textbox(label="🔌 Connection Status", value=db_connection_status, interactive=False)
+			gr.Markdown("### ℹ️ Instructions")
+			gr.Markdown("""
+			1. **Fill in your database credentials**
+			2. **Click 'Connect to Database'**
+			3. **Wait for successful connection**
+			4. **Proceed to other tabs once connected**
+			
+			**Note**: All database operations require a valid connection.
+			""")
+	
+	def handle_connection(host, port, database, user, password):
+		status, success = setup_database_connection(host, port, database, user, password)
+		return status
+	
+	connect_btn.click(
+		handle_connection,
+		inputs=[host_input, port_input, database_input, user_input, password_input],
+		outputs=connection_status
+	)
+
 # TAB 1: Database Operations
 with gr.Blocks(title="Database Operations") as tab1:
 	gr.Markdown("# 🗄️ Database Operations")
@@ -614,7 +622,7 @@ with gr.Blocks(title="AI Analytics") as tab2:
 with gr.Blocks(title="Statistical Analysis") as tab4:
 	gr.Markdown("# 📊 Statistical Analysis")
 	gr.Markdown("*Run statistical tests on your data*")
-
+	
 	with gr.Row():
 		with gr.Column(scale=1):
 			gr.Markdown("### enter a dict that comply for annova function")
@@ -656,8 +664,8 @@ with gr.Blocks(title="MCP guidelines") as tab5:
 
 # Create the TabbedInterface
 interface = gr.TabbedInterface(
-    [tab1, tab2, tab4, tab5], 
-    tab_names=["🗄️ Database Operations", "🤖 AI Analytics", "📊 Statistical Analysis", "📊 MCP guidelines"],
+    [tab0, tab1, tab2, tab4, tab5], 
+    tab_names=["🔌 Database Setup", "🗄️ Database Operations", "🤖 AI Analytics", "📊 Statistical Analysis", "📊 MCP guidelines"],
     title="E-commerce Database Analytics Platform",
     theme=gr.themes.Soft()
 )
